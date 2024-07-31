@@ -21,9 +21,9 @@ namespace AccesoDatos
             return sqlConBD;
         }
 
-        protected SqliteConnection GetConnIntegrin()
+        protected SqliteConnection GetConnIntegrin(string ruta)
         {
-            sqlConIntegrin = new SqliteConnection("");
+            sqlConIntegrin = new SqliteConnection(ruta);
             sqlConIntegrin.Open();
             return sqlConIntegrin;
         }
