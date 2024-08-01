@@ -46,7 +46,6 @@ namespace AccesoDatos
                 sqlcon.Close();
             }
             return lcliente;
-
         }
     }
 }
