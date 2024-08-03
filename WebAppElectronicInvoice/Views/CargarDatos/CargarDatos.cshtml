@@ -1,0 +1,18 @@
+﻿
+@{
+    ViewBag.Title = "CargarDatos";
+}
+
+<h2>Cargar Datos</h2>
+<div>
+    @using (Html.BeginForm("SubirArchivo", "CargarDatos", FormMethod.Post, new {enctype="multipart/form-data"} ))
+            {
+                <div class="row">
+                    <input type="file" name="Archivo" class="form-control col-md-3" required />
+                    <button type="submit" value="Guardar" class="btn btn-success col-md-2">Guardar</button>    
+                </div>
+                
+                
+            }
+</div>
+

@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.35026.233
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Entidades", "Entidades\Entidades.csproj", "{8961E7D3-BF0A-43C2-95F8-D56E2417A15B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccesoDatos", "AccesoDatos\AccesoDatos.csproj", "{98304FE6-E858-4A80-B08E-031A98FE9CB2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAppElectronicInvoice", "WebAppElectronicInvoice\WebAppElectronicInvoice.csproj", "{4B505163-2F0E-4478-80DE-EDF865B1B30D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{98304FE6-E858-4A80-B08E-031A98FE9CB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98304FE6-E858-4A80-B08E-031A98FE9CB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98304FE6-E858-4A80-B08E-031A98FE9CB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B505163-2F0E-4478-80DE-EDF865B1B30D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B505163-2F0E-4478-80DE-EDF865B1B30D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B505163-2F0E-4478-80DE-EDF865B1B30D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B505163-2F0E-4478-80DE-EDF865B1B30D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
