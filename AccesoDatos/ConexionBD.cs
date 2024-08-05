@@ -5,14 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
-using Microsoft.Data.Sqlite;
+using System.Data.SQLite;
 
 namespace AccesoDatos
 {
     public class ConexionBD
     {
         protected SqlConnection sqlConBD;
-        protected SqliteConnection sqlConIntegrin;
+        protected SQLiteConnection sqlConIntegrin;
 
         protected SqlConnection GetConnDB()
         {
@@ -21,9 +21,9 @@ namespace AccesoDatos
             return sqlConBD;
         }
 
-        protected SqliteConnection GetConnIntegrin(string ruta)
+        protected SQLiteConnection GetConnIntegrin(string ruta)
         {
-            sqlConIntegrin = new SqliteConnection(ruta);
+            sqlConIntegrin = new SQLiteConnection(ruta);
             sqlConIntegrin.Open();
             return sqlConIntegrin;
         }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
 using Entidades;
-using Microsoft.Data.Sqlite;
+using System.Data.SQLite;
 
 
 namespace AccesoDatos
@@ -16,13 +16,13 @@ namespace AccesoDatos
         private List<ClienteIntegrin> ConsultarClienteIntegrin(string ruta)
         {
             List<ClienteIntegrin> lcliente = new List<ClienteIntegrin>();
-            SqliteDataReader dr;
-            SqliteConnection sqlcon = new SqliteConnection();
+            SQLiteDataReader dr;
+            SQLiteConnection sqlcon = new SQLiteConnection();
             try
             {
                 sqlcon = GetConnIntegrin(ruta);
                 string query = "select ciclo,codigo,apellidos,nombres,identificacion,direccion from BdSuscriptores";
-                SqliteCommand cmd = new SqliteCommand(query, sqlcon);
+                SQLiteCommand cmd = new SQLiteCommand(query, sqlcon);
                 dr = cmd.ExecuteReader();
                 ClienteIntegrin cliente = new ClienteIntegrin();
                 while(dr.Read())

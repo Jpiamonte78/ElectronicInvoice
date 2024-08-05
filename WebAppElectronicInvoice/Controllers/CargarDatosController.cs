@@ -11,6 +11,7 @@ namespace WebAppElectronicInvoice.Controllers
 {
     public class CargarDatosController : Controller
     {
+        static string RutaDb;
         // GET: CargarDatos
         public ActionResult CargarDatos()
         {
@@ -20,7 +21,7 @@ namespace WebAppElectronicInvoice.Controllers
         public ActionResult SubirArchivo(HttpPostedFileBase archivo)
         {
             string _script = "";
-            string RutaDb = Server.MapPath("~/DbIntegrin/");
+            RutaDb = Server.MapPath("~/DbIntegrin/");
             if (!Directory.Exists(RutaDb))
             {
                 Directory.CreateDirectory(RutaDb);
@@ -37,14 +38,28 @@ namespace WebAppElectronicInvoice.Controllers
             {
                 string NombreDb = Path.GetFileName(archivo.FileName);
                 archivo.SaveAs(RutaDb+NombreDb);
+                int cargados = CargarFacturas(RutaDb + NombreDb);
                 _script = "<script language='javascript'>" +
-                    "window.alert('Guardado Correctamente');" +
+                    "window.alert('Se han cargado correctamente "+cargados.ToString()+" Facturas');" +
                     "window.location.href='/CargarDatos/CargarDatos';" +
                     "</script>";
             }
             return Content(_script);
         }
 
+        private int CargarFacturas(string rutadb)
+        {
+            int reg = 0;
+            try
+            {
+                reg = new ADFacturasT().Consultar_FacturasTotal(rutadb);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return reg;
+        }
 
     }
 }
