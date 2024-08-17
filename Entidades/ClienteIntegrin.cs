@@ -8,7 +8,7 @@ using System.ComponentModel;
 namespace Entidades
 {
     
-    public class ClienteIntegrin
+    public class ClienteIntegrin:cliente
     {
         public int Id_Cliente_integrin { get; set; }
         public string Codpredio { get; set; }
@@ -22,5 +22,7 @@ namespace Entidades
         public string telefono_cliente { get; set; }
         public string email_cliente { get; set; }
         public string ciclo { get; set; }
+
+
     }
 }

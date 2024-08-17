@@ -23,7 +23,8 @@ namespace AccesoDatos
 
         protected SQLiteConnection GetConnIntegrin(string ruta)
         {
-            sqlConIntegrin = new SQLiteConnection(ruta);
+
+            sqlConIntegrin = new SQLiteConnection("Data Source="+ruta);
             sqlConIntegrin.Open();
             return sqlConIntegrin;
         }

@@ -27,7 +27,7 @@ namespace AccesoDatos
                 FacturasT factura = new FacturasT();
                 while(dr.Read())
                 {
-                    string feclim = dr["codigobarras"].ToString().Substring(0, -8);
+                    string feclim = dr["codigobarras"].ToString().Substring(dr["codigobarras"].ToString().Length-8);
                     factura = new FacturasT();
                     factura.ciclo = dr["ciclo"].ToString();
                     factura.anio = Convert.ToInt32(dr["anio"]);
@@ -63,6 +63,7 @@ namespace AccesoDatos
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("accion", "insertar");
+                    cmd.Parameters.AddWithValue("id_factura", DBNull.Value);
                     cmd.Parameters.AddWithValue("ciclo", fact.ciclo);
                     cmd.Parameters.AddWithValue("anio", fact.anio);
                     cmd.Parameters.AddWithValue("periodo", fact.periodo);

@@ -21,7 +21,7 @@ namespace WebAppElectronicInvoice.Controllers
         public ActionResult SubirArchivo(HttpPostedFileBase archivo)
         {
             string _script = "";
-            RutaDb = Server.MapPath("~/DbIntegrin/");
+            RutaDb = new ParametrosGeneralesAD().ConsultarRutaDb();
             if (!Directory.Exists(RutaDb))
             {
                 Directory.CreateDirectory(RutaDb);
@@ -38,9 +38,10 @@ namespace WebAppElectronicInvoice.Controllers
             {
                 string NombreDb = Path.GetFileName(archivo.FileName);
                 archivo.SaveAs(RutaDb+NombreDb);
-                int cargados = CargarFacturas(RutaDb + NombreDb);
+                int cargadosT = CargarFacturas(RutaDb + NombreDb);
+                int cargadosD = CargarDetalles(RutaDb + NombreDb);
                 _script = "<script language='javascript'>" +
-                    "window.alert('Se han cargado correctamente "+cargados.ToString()+" Facturas');" +
+                    "window.alert('Se han cargado correctamente "+cargadosT.ToString()+" Facturas Totales y "+cargadosD.ToString()+" Detalles ');" +
                     "window.location.href='/CargarDatos/CargarDatos';" +
                     "</script>";
             }
@@ -53,6 +54,20 @@ namespace WebAppElectronicInvoice.Controllers
             try
             {
                 reg = new ADFacturasT().Consultar_FacturasTotal(rutadb);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return reg;
+        }
+
+        private int CargarDetalles(string rutadb)
+        {
+            int reg = 0;
+            try
+            {
+                reg = new ADFacturasD().Consultar_detalles(rutadb);
             }
             catch (Exception ex)
             {
