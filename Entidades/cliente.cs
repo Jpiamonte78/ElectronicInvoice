@@ -23,5 +23,8 @@ namespace Entidades
         public string telefono { get; set; }
         public string email { get; set; }
         public string zona_postal { get; set; }
+
+
+        public List<TipoDocumento> ltipodocumento { get; set; }
     }
 }

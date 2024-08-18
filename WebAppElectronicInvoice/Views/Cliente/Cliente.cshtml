@@ -1,28 +1,22 @@
 ﻿@model IEnumerable<Entidades.ClienteIntegrin>
 
 @{
-    ViewBag.Title = "Cliente";
+    ViewBag.Title = "Clientes Pendientes";
 }
 
-<h2>Cliente</h2>
+<h2>Clientes Pendientes</h2>
 
 
 <table class="table">
     <tr>
         <th>
-            @Html.DisplayNameFor(model => model.id_cliente)
+            @Html.DisplayNameFor(model => model.ciclo)
         </th>
         <th>
-            @Html.DisplayNameFor(model => model.tipo_identificacion)
+            @Html.DisplayNameFor(model => model.Codpredio)
         </th>
         <th>
-            @Html.DisplayNameFor(model => model.identificacion)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.dv)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.razon_social)
+            @Html.DisplayNameFor(model => model.Identificacion)
         </th>
         <th>
             @Html.DisplayNameFor(model => model.nombres)
@@ -34,61 +28,7 @@
             @Html.DisplayNameFor(model => model.apellido_2)
         </th>
         <th>
-            @Html.DisplayNameFor(model => model.tipo_persona)
-        </th>
-        <th>
             @Html.DisplayNameFor(model => model.direccion)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.departamento)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.ciudad)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.telefono)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.email)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.zona_postal)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Id_Cliente_integrin)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Codpredio)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Identificacion)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Nombre_cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Apellido1_cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Apellido2_Cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Direccion_cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.ciudad_cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.departamento_cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.telefono_cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.email_cliente)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.ciclo)
         </th>
         <th></th>
     </tr>
@@ -96,19 +36,13 @@
 @foreach (var item in Model) {
     <tr>
         <td>
-            @Html.DisplayFor(modelItem => item.id_cliente)
+            @Html.DisplayFor(modelItem => item.ciclo)
         </td>
         <td>
-            @Html.DisplayFor(modelItem => item.tipo_identificacion)
+            @Html.DisplayFor(modelItem => item.Codpredio)
         </td>
         <td>
-            @Html.DisplayFor(modelItem => item.identificacion)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.dv)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.razon_social)
+            @Html.DisplayFor(modelItem => item.Identificacion)
         </td>
         <td>
             @Html.DisplayFor(modelItem => item.nombres)
@@ -120,64 +54,10 @@
             @Html.DisplayFor(modelItem => item.apellido_2)
         </td>
         <td>
-            @Html.DisplayFor(modelItem => item.tipo_persona)
-        </td>
-        <td>
             @Html.DisplayFor(modelItem => item.direccion)
         </td>
         <td>
-            @Html.DisplayFor(modelItem => item.departamento)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.ciudad)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.telefono)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.email)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.zona_postal)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Id_Cliente_integrin)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Codpredio)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Identificacion)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Nombre_cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Apellido1_cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Apellido2_Cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Direccion_cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.ciudad_cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.departamento_cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.telefono_cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.email_cliente)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.ciclo)
-        </td>
-        <td>
-            @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
+            @Html.ActionLink("Edit", "EditCliente", new { id = item.Id_Cliente_integrin }) |
         </td>
     </tr>
 }

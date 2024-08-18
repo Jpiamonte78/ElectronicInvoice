@@ -233,6 +233,7 @@
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\CargarDatos\CargarDatos.cshtml" />
     <Content Include="Views\Cliente\Cliente.cshtml" />
+    <Content Include="Views\Cliente\EditCliente.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using AccesoDatos;
+using Entidades;
 
 namespace WebAppElectronicInvoice.Controllers
 {
@@ -11,13 +13,17 @@ namespace WebAppElectronicInvoice.Controllers
         // GET: Cliente
         public ActionResult Cliente()
         {
-
-            return View();
+            List<ClienteIntegrin> lclientespendientes = new List<ClienteIntegrin>();
+            lclientespendientes = new ADClienteIntegrin().ConsultarPendientes();
+            return View(lclientespendientes);
         }
-        [HttpPost]
-        public ActionResult Cliente(int id)
+        [HttpGet]
+        public ActionResult EditCliente(int id)
         {
-            return View(id);
+            ClienteIntegrin cliente = new ClienteIntegrin();
+            cliente = new ADClienteIntegrin().ConsultarUnCliente(id);
+            cliente.ltipodocumento = new ADTipoDocumento().tipoDocumentos();    
+            return View(cliente);
         }
     }
 }
