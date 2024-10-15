@@ -17,5 +17,6 @@ namespace Entidades
         public string codigo_c { get; set; }
 	    public string nombre_c { get; set; }
 	    public decimal valor { get; set; }
+        public int consumo { get; set; }
     }
 }

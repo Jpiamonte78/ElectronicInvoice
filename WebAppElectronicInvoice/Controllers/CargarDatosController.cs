@@ -40,6 +40,8 @@ namespace WebAppElectronicInvoice.Controllers
                 archivo.SaveAs(RutaDb+NombreDb);
                 int cargadosT = CargarFacturas(RutaDb + NombreDb);
                 int cargadosD = CargarDetalles(RutaDb + NombreDb);
+                int cargalect = CargarLecturas(RutaDb + NombreDb);
+                int cargatari = CargarTarifas(RutaDb + NombreDb);
                 _script = "<script language='javascript'>" +
                     "window.alert('Se han cargado correctamente "+cargadosT.ToString()+" Facturas Totales y "+cargadosD.ToString()+" Detalles ');" +
                     "window.location.href='/CargarDatos/CargarDatos';" +
@@ -68,6 +70,34 @@ namespace WebAppElectronicInvoice.Controllers
             try
             {
                 reg = new ADFacturasD().Consultar_detalles(rutadb);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return reg;
+        }
+
+        private int CargarLecturas(string rutadb)
+        {
+            int reg = 0;
+            try
+            {
+                reg = new ADLecturas().Consultar_Lecturas(rutadb);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return reg;
+        }
+
+        private int CargarTarifas(string rutadb)
+        {
+            int reg = 0;
+            try
+            {
+                reg = new ADTarifas().Consultar_tarifas(rutadb);
             }
             catch (Exception ex)
             {

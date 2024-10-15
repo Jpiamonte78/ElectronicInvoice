@@ -35,6 +35,14 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("telefono_cliente", DBNull.Value);
                     cmd.Parameters.AddWithValue("email_cliente", DBNull.Value);
                     cmd.Parameters.AddWithValue("ciclo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("uso", DBNull.Value);
+                    cmd.Parameters.AddWithValue("Estrato", DBNull.Value);
+                    cmd.Parameters.AddWithValue("Nmedidor", DBNull.Value);
+                    cmd.Parameters.AddWithValue("Matricula", DBNull.Value);
+                    cmd.Parameters.AddWithValue("zona_postal", DBNull.Value);
+                    cmd.Parameters.AddWithValue("resp_rut", DBNull.Value);
+                    cmd.Parameters.AddWithValue("tributos", DBNull.Value);
+                    cmd.Parameters.AddWithValue("actualizado", DBNull.Value);
                     try
                     {
                         ClienteIntegrin cliente = new ClienteIntegrin();
@@ -44,21 +52,27 @@ namespace AccesoDatos
                             cliente = new ClienteIntegrin();
                             cliente.Id_Cliente_integrin = Convert.ToInt32(dr["Id_Cliente_Integrin"]);
                             cliente.Codpredio = dr["codpredio"].ToString();
+                            cliente.tipo_identificacion = Convert.ToInt16(dr["tipo_identificacion"]);
                             cliente.Identificacion = dr["Identificacion"].ToString();
-                            cliente.nombres = dr["nombres"].ToString();
-                            cliente.apellido_1 = dr["apellido_1"].ToString();
-                            cliente.apellido_2 = dr["apellido_2"].ToString();
-                            cliente.direccion = dr["direccion"].ToString();
-                            cliente.ciudad = dr["ciudad"].ToString();
-                            cliente.departamento = dr["departamento"].ToString();
-                            cliente.telefono = dr["telefono"].ToString();
-                            cliente.email = dr["email"].ToString();
-                            cliente.tipo_identificacion = Convert.ToInt32(dr["tipo_identificacion"]);
-                            cliente.dv = Convert.ToInt32(dr["dv"]);
-                            cliente.razon_social = dr["razon_social"].ToString();
-                            cliente.tipo_persona = Convert.ToInt32(dr["tipo_persona"]);
-                            cliente.zona_postal = dr["zona_postal"].ToString();
+                            cliente.dv = dr["dv"].ToString();
+                            cliente.tipo_persona = Convert.ToInt16(dr["tipo_persona"]);
+                            cliente.Nombre_cliente = dr["nombre_cliente"].ToString();
+                            cliente.Apellido1_cliente = dr["apellido1_cliente"].ToString();
+                            cliente.Apellido2_Cliente = dr["apellido2_cliente"].ToString();
+                            cliente.Direccion_cliente = dr["direccion_cliente"].ToString();
+                            cliente.ciudad_cliente= dr["ciudad_cliente"].ToString().Trim();
+                            cliente.departamento_cliente = dr["departamento_cliente"].ToString().Trim();
+                            cliente.telefono_cliente = dr["telefono_cliente"].ToString();
+                            cliente.email_cliente = dr["email_cliente"].ToString();
                             cliente.ciclo = dr["ciclo"].ToString();
+                            cliente.uso = dr["uso"].ToString();
+                            cliente.estrato = dr["estrato"].ToString();
+                            cliente.Nmedidor = dr["Nmedidor"].ToString();
+                            cliente.matricula = dr["matricula"].ToString();
+                            cliente.zona_postal = dr["zona_postal"].ToString();
+                            cliente.resp_rut = dr["resp_rut"].ToString();
+                            cliente.tributos = dr["tributos"].ToString();
+                            cliente.actualizado = Convert.ToBoolean(dr["actualizado"]);
                             lcliente.Add(cliente);
                         }
                     }
@@ -94,30 +108,46 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("telefono_cliente", DBNull.Value);
                     cmd.Parameters.AddWithValue("email_cliente", DBNull.Value);
                     cmd.Parameters.AddWithValue("ciclo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("uso", DBNull.Value);
+                    cmd.Parameters.AddWithValue("Estrato", DBNull.Value);
+                    cmd.Parameters.AddWithValue("Nmedidor", DBNull.Value);
+                    cmd.Parameters.AddWithValue("Matricula", DBNull.Value);
+                    cmd.Parameters.AddWithValue("zona_postal", DBNull.Value);
+                    cmd.Parameters.AddWithValue("resp_rut", DBNull.Value);
+                    cmd.Parameters.AddWithValue("tributos", DBNull.Value);
+                    cmd.Parameters.AddWithValue("actualizado", DBNull.Value);
+
                     try
                     {
                         var dr = cmd.ExecuteReader();
                         while (dr.Read())
                         {
-                            string[] ident = dr["Identificacion"].ToString().Split('-');
                             cliente = new ClienteIntegrin();
                             cliente.Id_Cliente_integrin = Convert.ToInt32(dr["Id_Cliente_Integrin"]);
                             cliente.Codpredio = dr["codpredio"].ToString();
-                            cliente.identificacion = Convert.ToInt32(ident[0]);
-                            cliente.nombres = dr["nombres"].ToString();
-                            cliente.apellido_1 = dr["apellido_1"].ToString();
-                            cliente.apellido_2 = dr["apellido_2"].ToString();
-                            cliente.direccion = dr["direccion"].ToString();
-                            cliente.ciudad = dr["ciudad"].ToString();
-                            cliente.departamento = dr["departamento"].ToString();
-                            cliente.telefono = dr["telefono"].ToString();
-                            cliente.email = dr["email"].ToString();
-                            cliente.tipo_identificacion = Convert.ToInt32(dr["tipo_identificacion"]);
-                            cliente.dv = ident.Length > 1 ? Convert.ToInt32(ident[1]):0;
-                            cliente.razon_social = dr["razon_social"].ToString();
-                            cliente.tipo_persona = Convert.ToInt32(dr["tipo_persona"]);
+                            cliente.tipo_identificacion = Convert.ToInt16(dr["tipo_identificacion"]);
+                            cliente.Identificacion = dr["Identificacion"].ToString();
+                            cliente.dv = dr["dv"].ToString();
+                            cliente.tipo_persona = Convert.ToInt16(dr["tipo_persona"]);
+                            cliente.Razon_social = dr["Razon_social"].ToString();
+                            cliente.Nombre_cliente = dr["Nombre_cliente"].ToString();
+                            cliente.Apellido1_cliente = dr["apellido1_cliente"].ToString();
+                            cliente.Apellido2_Cliente = dr["apellido2_cliente"].ToString();
+                            cliente.Direccion_cliente = dr["Direccion_cliente"].ToString();
+                            cliente.ciudad_cliente = dr["ciudad_cliente"].ToString().Trim();
+                            cliente.departamento_cliente = dr["departamento_cliente"].ToString().Trim();
+                            cliente.telefono_cliente = dr["telefono_cliente"].ToString();
+                            cliente.email_cliente = dr["email_cliente"].ToString();
                             cliente.zona_postal = dr["zona_postal"].ToString();
                             cliente.ciclo = dr["ciclo"].ToString();
+                            cliente.uso = dr["uso"].ToString();
+                            cliente.estrato = dr["estrato"].ToString();
+                            cliente.Nmedidor = dr["Nmedidor"].ToString();
+                            cliente.matricula = dr["matricula"].ToString();
+                            cliente.zona_postal = dr["zona_postal"].ToString();
+                            cliente.resp_rut = dr["resp_rut"].ToString();
+                            cliente.tributos = dr["tributos"].ToString();
+                            cliente.actualizado = Convert.ToBoolean(dr["actualizado"]);
                         }
                     }
                     catch (Exception ex)
@@ -129,6 +159,6 @@ namespace AccesoDatos
             return cliente;
         }
 
-
+        
     }
 }

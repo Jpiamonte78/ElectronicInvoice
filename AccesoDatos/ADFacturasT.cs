@@ -7,6 +7,7 @@ using Entidades;
 using System.Data.SQLite;
 using System.Data;
 using System.Data.SqlClient;
+using System.Data.Entity.Core.Metadata.Edm;
 
 namespace AccesoDatos
 {
@@ -85,6 +86,53 @@ namespace AccesoDatos
             sqlconn.Close();
 
             return reg;
+        }
+
+        public List<FacturasT> Consultar_Facturas(DateTime fecha)
+        {
+            List<FacturasT> lfacturas = new List<FacturasT>();
+            using (SqlConnection conn = GetConnDB())
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SpFacturasT";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("accion", "Consultar");
+                    cmd.Parameters.AddWithValue("id_factura", DBNull.Value);
+                    cmd.Parameters.AddWithValue("ciclo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("anio", DBNull.Value);
+                    cmd.Parameters.AddWithValue("periodo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("numfact", DBNull.Value);
+                    cmd.Parameters.AddWithValue("codpredio", DBNull.Value);
+                    cmd.Parameters.AddWithValue("valor_total", DBNull.Value);
+                    cmd.Parameters.AddWithValue("fecha", fecha);
+                    cmd.Parameters.AddWithValue("fecha_limite", DBNull.Value);
+                    try
+                    {
+                        FacturasT fact = new FacturasT();
+                        var dr = cmd.ExecuteReader();
+                        while(dr.Read())
+                        {
+                            fact = new FacturasT();
+                            fact.id_factura = Convert.ToInt32(dr["id_factura"]);
+                            fact.ciclo = dr["ciclo"].ToString();
+                            fact.anio = Convert.ToInt32(dr["anio"]);
+                            fact.periodo = dr["periodo"].ToString();
+                            fact.numfact = dr["numfact"].ToString();
+                            fact.codpredio = dr["codpredio"].ToString();
+                            fact.valor_total = Convert.ToDecimal(dr["valor_total"]);
+                            fact.fecha = Convert.ToDateTime(dr["fecha"]);
+                            fact.fecha_limite = Convert.ToDateTime(dr["fecha_limite"]);
+                            lfacturas.Add(fact);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new ApplicationException("Consultar_Facturas: "+ex.Message,ex);
+                    }
+                }
+            }
+            return lfacturas;
         }
     }
 }

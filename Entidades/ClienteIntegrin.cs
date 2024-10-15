@@ -8,11 +8,15 @@ using System.ComponentModel;
 namespace Entidades
 {
     
-    public class ClienteIntegrin:cliente
+    public class ClienteIntegrin
     {
         public int Id_Cliente_integrin { get; set; }
         public string Codpredio { get; set; }
+        public int tipo_identificacion { get; set; }
         public string Identificacion { get; set; }
+        public string dv { get; set; }
+        public int tipo_persona { get; set; }
+        public string Razon_social { get; set; }
         public string Nombre_cliente { get; set; }
         public string Apellido1_cliente { get; set; }
         public string Apellido2_Cliente { get; set; }
@@ -22,7 +26,25 @@ namespace Entidades
         public string telefono_cliente { get; set; }
         public string email_cliente { get; set; }
         public string ciclo { get; set; }
+        public string uso { get; set; }
+        public string estrato { get; set; }
+        public string Nmedidor { get; set; }
+        public string matricula { get; set; }
+        public string zona_postal { get; set; }
+        public string resp_rut { get; set; }
+        public string tributos { get; set; }
+        public bool actualizado { get; set; }
 
+        public List<string> selectedresp { get; set; }
+        public List<string> selectedTrib { get; set; }
+        public List<TipoDocumento> ltipodocumento { get; set; }
 
+        public List<TipoPersona> lpersona { get; set; }
+
+        public List<MaeDepto> ldeptos { get; set; }
+        public List<MaeMuni> lmuni { get; set; }
+
+        public List<Responsabilidades> lresponsabilidades { get; set; }
+        public List<Tributos> ltributos { get; set; }
     }
 }

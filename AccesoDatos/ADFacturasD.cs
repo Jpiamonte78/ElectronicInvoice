@@ -7,11 +7,13 @@ using System.Data.SQLite;
 using Entidades;
 using System.Data.SqlClient;
 using System.Data;
+using System.Globalization;
 
 namespace AccesoDatos
 {
     public class ADFacturasD:ConexionBD
     {
+        CultureInfo culture = new CultureInfo("en-US");
         public int Consultar_detalles(string ruta)
         {
             int reg = 0;
@@ -35,7 +37,7 @@ namespace AccesoDatos
                     detalle.codpredio = dr["codpredio"].ToString();
                     detalle.codigo_c = dr["codigo_c"].ToString();
                     detalle.nombre_c = dr["nombre_c"].ToString();
-                    detalle.valor = Convert.ToDecimal(dr["valor"].ToString().Replace('.',','));
+                    detalle.valor = Convert.ToDecimal(dr["valor"],culture);
                     ldetalle.Add(detalle);
                 }
                 reg = InsertarFacturasD(ldetalle);
@@ -73,7 +75,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("valor", fact.valor);
                     try
                     {
-                        reg += Convert.ToInt32(cmd.ExecuteScalar());
+                        reg += cmd.ExecuteNonQuery();
                     }
                     catch (Exception ex)
                     {
@@ -84,6 +86,52 @@ namespace AccesoDatos
             sqlconn.Close();
 
             return reg;
+        }
+
+        public List<FacturasD> Consultar_Detalle(string ciclo, string periodo, int anio, string codpredio)
+        {
+            List<FacturasD> ldetalle = new List<FacturasD>();
+            using (var conn = GetConnDB())
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SpFacturasD";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("accion", "Consultar");
+                    cmd.Parameters.AddWithValue("id_facturaD", DBNull.Value);
+                    cmd.Parameters.AddWithValue("ciclo", ciclo);
+                    cmd.Parameters.AddWithValue("anio", anio);
+                    cmd.Parameters.AddWithValue("periodo", periodo);
+                    cmd.Parameters.AddWithValue("numfac", DBNull.Value);
+                    cmd.Parameters.AddWithValue("codpredio", codpredio);
+                    cmd.Parameters.AddWithValue("codigo_c", DBNull.Value);
+                    cmd.Parameters.AddWithValue("nombre_c", DBNull.Value);
+                    cmd.Parameters.AddWithValue("valor", DBNull.Value);
+                    try
+                    {
+                        FacturasD Dfact = new FacturasD();
+                        var dr = cmd.ExecuteReader();
+                        while(dr.Read())
+                        {
+                            Dfact = new FacturasD();
+                            Dfact.ciclo = dr["ciclo"].ToString();
+                            Dfact.periodo = dr["periodo"].ToString();
+                            Dfact.anio = Convert.ToInt32(dr["anio"]);
+                            Dfact.codpredio = dr["codpredio"].ToString();
+                            Dfact.codigo_c = dr["codigo_c"].ToString();
+                            Dfact.nombre_c = dr["nombre_c"].ToString();
+                            Dfact.valor = Convert.ToDecimal(dr["valor"]);
+                            Dfact.consumo = Convert.ToInt32(dr["consumo"]);
+                            ldetalle.Add(Dfact);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new ApplicationException("Consultar_Detalle: "+ex.Message,ex);
+                    }
+                }
+            }
+            return ldetalle;
         }
     }
 }
