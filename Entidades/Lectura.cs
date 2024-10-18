@@ -13,10 +13,10 @@ namespace Entidades
         public string periodo { get; set; }
         public int anio { get; set; }
         public string codigo_p { get; set; }
-        public int lect_actual { get; set; }
-        public int lect_anterior { get; set; }
-        public int consumo { get; set; }
-        public int consumo_promedio { get; set; }
+        public decimal lect_actual { get; set; }
+        public decimal lect_anterior { get; set; }
+        public decimal consumo { get; set; }
+        public decimal consumo_promedio { get; set; }
         public DateTime fecha_lectura { get; set; }
     }
 }

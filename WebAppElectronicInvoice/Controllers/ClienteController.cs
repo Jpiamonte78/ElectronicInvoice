@@ -23,13 +23,13 @@ namespace WebAppElectronicInvoice.Controllers
             List<TipoPersona> ltipopersona= new List<TipoPersona>();
             ltipopersona.Add(new TipoPersona() { codigo = 1, Descripcion = "Persona Juridica y asimiladas" });
             ltipopersona.Add(new TipoPersona() { codigo = 2, Descripcion = "Persona Natural y asimiladas" });
-            cliente cliente = new cliente();
+            ClienteIntegrin cliente = new ClienteIntegrin();
             cliente = new ADClienteIntegrin().ConsultarUnCliente(id);
-            cliente.id_cliente_integrin = id;
+            cliente.Id_Cliente_integrin = id;
             cliente.ltipodocumento = new ADTipoDocumento().tipoDocumentos();
             cliente.lpersona = ltipopersona;
             cliente.ldeptos = new MaeDepto_MuniAD().Consultar_Deptos();
-            cliente.lmuni = new MaeDepto_MuniAD().Consultar_Municipios(cliente.departamento);
+            cliente.lmuni = new MaeDepto_MuniAD().Consultar_Municipios(cliente.departamento_cliente);
             cliente.ltributos = new ADParametrosGenerales().consultarTributos();
             cliente.lresponsabilidades = new ADParametrosGenerales().Consultar_Responsabilidades();
             cliente.selectedresp = cliente.resp_rut.Split(',').ToList();
@@ -38,13 +38,13 @@ namespace WebAppElectronicInvoice.Controllers
         }
 
         [HttpPost]
-        public ActionResult EditCliente(cliente Cliente)
+        public ActionResult EditCliente(ClienteIntegrin Cliente)
         {
             Cliente.resp_rut = string.Join(",", Cliente.selectedresp);
             Cliente.tributos = (Cliente.selectedTrib != null) ? string.Join(",", Cliente.selectedTrib):"";
             try
             {
-                new AdCliente().insertar_cliente(Cliente);
+                new ADClienteIntegrin().Actualizar_cliente(Cliente);
             }
             catch (Exception ex)
             {

@@ -91,5 +91,52 @@ namespace AccesoDatos
 
             return reg;
         }
+
+        public Lectura Consultar_lecturas_suscriptor(string codsus, string ciclo,string periodo, int anio)
+        {
+            Lectura lect = new Lectura();
+            using (SqlConnection conn = GetConnDB())
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SpLecturas";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("accion", "Consultar");
+                    cmd.Parameters.AddWithValue("id_lecturas", DBNull.Value);
+                    cmd.Parameters.AddWithValue("ciclo", ciclo);
+                    cmd.Parameters.AddWithValue("anio", anio);
+                    cmd.Parameters.AddWithValue("periodo", periodo);
+                    cmd.Parameters.AddWithValue("codigo_p", codsus);
+                    cmd.Parameters.AddWithValue("lect_actual", DBNull.Value);
+                    cmd.Parameters.AddWithValue("lect_anterior", DBNull.Value);
+                    cmd.Parameters.AddWithValue("consumo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("consumo_promedio", DBNull.Value);
+                    cmd.Parameters.AddWithValue("fecha_lectura", DBNull.Value);
+                    try
+                    {
+                        var dr = cmd.ExecuteReader();
+                        while (dr.Read())
+                        {
+                            lect = new Lectura();
+                            lect.Id_Lecturas = Convert.ToInt32(dr["id_lecturas"]);
+                            lect.ciclo = dr["ciclo"].ToString();
+                            lect.periodo = dr["periodo"].ToString();
+                            lect.anio = Convert.ToInt16(dr["anio"]);
+                            lect.codigo_p = dr["codigo_p"].ToString();
+                            lect.lect_actual = Convert.ToDecimal(dr["lect_actual"]);
+                            lect.lect_anterior = Convert.ToDecimal(dr["lect_anterior"]);
+                            lect.consumo = Convert.ToDecimal(dr["consumo"]);
+                            lect.consumo_promedio = Convert.ToDecimal(dr["consumo_promedio"]);
+                            lect.fecha_lectura = Convert.ToDateTime(dr["fecha_lectura"]);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new ApplicationException("Consultar_lecturas_suscriptor: "+ex.Message,ex);
+                    }
+                }
+            }
+            return lect;
+        }
     }
 }

@@ -34,7 +34,8 @@ namespace Entidades
         public string resp_rut { get; set; }
         public string tributos { get; set; }
         public bool actualizado { get; set; }
-
+        public string nomciudad { get; set; }
+        public string nomdepto { get; set; }
         public List<string> selectedresp { get; set; }
         public List<string> selectedTrib { get; set; }
         public List<TipoDocumento> ltipodocumento { get; set; }
