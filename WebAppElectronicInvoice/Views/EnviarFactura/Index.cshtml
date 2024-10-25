@@ -23,24 +23,47 @@
 {
     <script type="text/javascript">
         $(document).ready(function () {
-            $('#btnenviar').click(function () {
+            $('#btnenviar').click(async function () {
                 var fecharep = $('#txtfecha').val();
-                $.ajax({
-                    url: '/EnviarFactura/EnviarFacturas',
-                    type: 'POST',
-                    data: { fecha: fecharep },
-                    success: function (response) {
-                        if (response.success) {
-                            alert(response.message);
-                        }
-                        else {
-                            alert('Error');
-                        }
-                    },
-                    error: function () {
-                        alert('Error en la solicitud');
+                console.log('Fecha a Enviar: ', fecharep);
+                try {
+                    let response = await $.ajax({
+                        url: '/EnviarFactura/EnviarFacturas',
+                        type: 'GET',
+                        data: { fecha: fecharep }
+                    });
+
+                    console.log('Solicitud AJAX exitosa');
+                    console.log('Respuesta del servidor:', response);
+
+                    if (response.success) {
+                        alert(response.response || "Operación exitosa!");
+                    } else {
+                        alert(response.message || 'Error');
                     }
-                });
+                } catch (error) {
+                    console.error('Error en la solicitud AJAX:', error);
+                    alert('Error en la solicitud');
+                }
+
+                //$.ajax({
+                //    url: '/EnviarFactura/EnviarFacturas',
+                //    type: 'POST',
+                //    data: { fecha: fecharep },
+                //    success: function (response) {
+                //        console.log('Solicitud AJAX exitosa');
+                //        console.log('Respuesta del servidor:', response);
+                //        if (response.success) {
+                //            alert(response.message || "Operación exitosa!");
+                //        } else {
+                //            alert(response.message || 'Error');
+                //        }
+                //    },
+                //    error: function (jqXHR, textStatus, errorThrown) {
+                //        console.error('Error en la solicitud:', textStatus, errorThrown);
+                //        alert('Error en la solicitud');
+                //    }
+                //});
             });
         });
     </script>

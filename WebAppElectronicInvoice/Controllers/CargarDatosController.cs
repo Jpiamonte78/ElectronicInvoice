@@ -31,23 +31,46 @@ namespace WebAppElectronicInvoice.Controllers
                 DirectoryInfo directory = new DirectoryInfo(RutaDb);
                 foreach (FileInfo file in directory.GetFiles())
                 {
-                    file.Delete();
+                    if(!IsFileInUse(file))
+                        file.Delete();
                 }
             }
             if(archivo!=null)
             {
                 string NombreDb = Path.GetFileName(archivo.FileName);
-                archivo.SaveAs(RutaDb+NombreDb);
-                int cargadosT = CargarFacturas(RutaDb + NombreDb);
-                int cargadosD = CargarDetalles(RutaDb + NombreDb);
-                int cargalect = CargarLecturas(RutaDb + NombreDb);
-                int cargatari = CargarTarifas(RutaDb + NombreDb);
+                string rutacompleta = Path.Combine(RutaDb, NombreDb);
+                archivo.SaveAs(rutacompleta);
+                int cargadosT = CargarFacturas(rutacompleta);
+                int cargadosD = CargarDetalles(rutacompleta);
+                int cargalect = CargarLecturas(rutacompleta);
+                int cargatari = CargarTarifas(rutacompleta);
+
+                if(!IsFileInUse(new FileInfo(rutacompleta)))
+                {
+                    System.IO.File.Delete(rutacompleta);
+                }
                 _script = "<script language='javascript'>" +
                     "window.alert('Se han cargado correctamente "+cargadosT.ToString()+" Facturas Totales y "+cargadosD.ToString()+" Detalles ');" +
                     "window.location.href='/CargarDatos/CargarDatos';" +
                     "</script>";
             }
             return Content(_script);
+        }
+
+        private static bool IsFileInUse(FileInfo file)
+        {
+            try
+            {
+                using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException)
+            {
+                return true;
+            }
+            return false;
         }
 
         private int CargarFacturas(string rutadb)

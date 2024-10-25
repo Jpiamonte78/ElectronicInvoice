@@ -138,11 +138,6 @@
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
-    <Compile Include="Connected Services\ServiceInvoway\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Compile>
     <Compile Include="Controllers\CargarDatosController.cs" />
     <Compile Include="Controllers\ClienteController.cs" />
     <Compile Include="Controllers\EnviarFacturaController.cs" />
@@ -154,12 +149,6 @@
     <Compile Include="Security\SecurityHeader.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Connected Services\ServiceInvoway\configuration91.svcinfo" />
-    <None Include="Connected Services\ServiceInvoway\configuration.svcinfo" />
-    <None Include="Connected Services\ServiceInvoway\Reference.svcmap">
-      <Generator>WCF Proxy Generator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
     <Content Include="Content\bootstrap-grid.rtl.css" />
@@ -185,28 +174,6 @@
     <Content Include="Scripts\bootstrap.esm.min.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
-    <None Include="Connected Services\ServiceInvoway\ConsultaEstadosFacturasWS.wsdl" />
-    <Content Include="Connected Services\ServiceInvoway\WebAppElectronicInvoice.ServiceInvoway.consultaEstadosFacturasResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Content>
-    <Content Include="Connected Services\ServiceInvoway\WebAppElectronicInvoice.ServiceInvoway.consultaEstadosFicherosYFacturasResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Content>
-    <Content Include="Connected Services\ServiceInvoway\WebAppElectronicInvoice.ServiceInvoway.consultaFacturasModificadasResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Content>
-    <Content Include="Connected Services\ServiceInvoway\WebAppElectronicInvoice.ServiceInvoway.entregaFacturaResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Content>
-    <Content Include="Connected Services\ServiceInvoway\WebAppElectronicInvoice.ServiceInvoway.facturaResult.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Content>
-    <Content Include="Connected Services\ServiceInvoway\WebAppElectronicInvoice.ServiceInvoway.getEstadosFacturasConFicherosResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Content>
-    <Content Include="Connected Services\ServiceInvoway\WebAppElectronicInvoice.ServiceInvoway.getEstadosFacturasResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Content>
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />
@@ -280,9 +247,6 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadataStorage Include="Connected Services\ServiceInvoway\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

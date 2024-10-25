@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
-using WebAppElectronicInvoice.ServiceInvoway;
+
 using AccesoDatos;
 using Entidades;
 using System.Runtime.InteropServices;
@@ -24,6 +24,8 @@ using System.Net.Sockets;
 using System.Net;
 using System.Security;
 using System.Globalization;
+using System.Diagnostics.Contracts;
+using System.Net.Http.Headers;
 
 namespace WebAppElectronicInvoice.Controllers
 {
@@ -42,8 +44,8 @@ namespace WebAppElectronicInvoice.Controllers
         }
 
 
-        [HttpPost]
-        public async Task<ActionResult> EnviarFacturas(DateTime fecha)
+        [HttpGet]
+        public async Task<JsonResult> EnviarFacturas(DateTime fecha)
         {
             string ciclo = "";
             string periodo = "";
@@ -57,7 +59,7 @@ namespace WebAppElectronicInvoice.Controllers
             {
                 factura = new documento();
                 documentoProveedor proveedor = new documentoProveedor();
-                proveedor.idProveedor = "830140206";
+                proveedor.idProveedor = "830140206-1";
                 documentoCliente docCliente = new documentoCliente();
                 foreach (FacturasT fact in lfacturas)
                 {
@@ -74,7 +76,8 @@ namespace WebAppElectronicInvoice.Controllers
                     factura.subtipoDocumento = "60";
                     factura.tipoOperacion = "601";
                     factura.divisa = "COP";
-                    factura.fechaDocumento = ConvertirFecha(fact.fecha.ToString());
+                    factura.fechaDocumento = ConvertirFecha(DateTime.Now.ToString()); //ConvertirFecha(fact.fecha.ToString());
+                    factura.unidadOrganizativa = "DEFAULT";
                     factura.fechaVencimiento = ConvertirFecha(fact.fecha_limite.ToString());
                     factura.direccionFactura = "Carrera 98 A No. 15A-80";
                     factura.distritoFactura = "Fontibon";
@@ -85,8 +88,10 @@ namespace WebAppElectronicInvoice.Controllers
                     factura.fechaIniFacturacion = ConvertirFecha("01/06/2024 00:00:00");
                     factura.fechaFinFacturacion = ConvertirFecha("30/06/2024 00:00:00");
                     factura.proveedor = proveedor;
-
-                    docCliente.idCliente = Cliente.Identificacion.ToString() + "-" + Cliente.dv.ToString();
+                    if(!string.IsNullOrEmpty(Cliente.dv.ToString().Trim()))
+                        docCliente.idCliente = Cliente.Identificacion.ToString() + "-" + Cliente.dv.ToString();
+                    else
+                        docCliente.idCliente = Cliente.Identificacion.ToString() ;
                     docCliente.tipoDocumentoIdCliente = Cliente.tipo_identificacion.ToString();
                     docCliente.razonSocialCliente = Cliente.Razon_social;
                     docCliente.nombreCliente = Cliente.Nombre_cliente;
@@ -104,13 +109,15 @@ namespace WebAppElectronicInvoice.Controllers
                     docCliente.responsabilidadesRutCliente = Cliente.resp_rut;
                     docCliente.tributosCliente = Cliente.tributos;
                     factura.cliente = docCliente;
-                    string[] emails = new string[1];
-                    emails[0] = Cliente.email_cliente;
-                    factura.emailsEnvio = emails;
+                    List<documentoemailsEnvio> emails = new List<documentoemailsEnvio>();
+                    documentoemailsEnvio email = new documentoemailsEnvio();
+                    email.email = Cliente.email_cliente;
+                    emails.Add(email);
+                    factura.emailsEnvio = emails.ToArray();
                     ldetalle = new ADFacturasD().Consultar_Detalle(fact.ciclo, fact.periodo, fact.anio, fact.codpredio);
                     documentoLinea linea = new documentoLinea();
                     uint i = 0;
-                    string[] productos = new string[7];
+                    string[] productos = new string[23];
                     productos[0] = "01";
                     productos[1] = "02";
                     productos[2] = "16";
@@ -118,17 +125,36 @@ namespace WebAppElectronicInvoice.Controllers
                     productos[4] = "76";
                     productos[5] = "RX";
                     productos[6] = "SI";
-                    decimal subsidioFSSRI = ldetalle.Where(x => x.codigo_c == "96").First().valor * 1;
+                    productos[7] = "CG";
+                    productos[8] = "CM";
+                    productos[9] = "CR";
+                    productos[10] = "CV";
+                    productos[11] = "DC";
+                    productos[12] = "MA";
+                    productos[13] = "MC";
+                    productos[14] = "MI";
+                    productos[15] = "MO";
+                    productos[16] = "PA";
+                    productos[17] = "PE";
+                    productos[18] = "RE";
+                    productos[19] = "RQ";
+                    productos[20] = "TC";
+                    productos[21] = "VA";
+                    productos[22] = "VT";
+                    decimal subsidioFSSRI = ldetalle.Where(x => x.codigo_c == "96").First().valor * -1;
                     decimal subsidioFECF = ldetalle.Where(x => x.codigo_c == "97").First().valor * -1;
                     decimal ajuste = ldetalle.Where(x => x.codigo_c == "29").First().valor;
                     decimal subtotal = 0;
                     documentoLineaDescuento descuento = new documentoLineaDescuento();
                     documentoLineaCargo cargo = new documentoLineaCargo();
+                    documentoLineas lineas = new documentoLineas();
+                    documentolineaDescuentos descuentos = new documentolineaDescuentos();
+                    documentolineaCargos cargos = new documentolineaCargos();
                     List<documentoLineaDescuento> ldescuentos = new List<documentoLineaDescuento>();
                     List<documentoLineaCargo> lcargos = new List<documentoLineaCargo>();
                     List<documentoLinea> lLineas = new List<documentoLinea>();
-                    List<documentoExtensionSPDServicioPublicoValorFacturadoProducto> lproductos = new List<documentoExtensionSPDServicioPublicoValorFacturadoProducto>();
-                    documentoExtensionSPDServicioPublicoValorFacturadoProducto producto = new documentoExtensionSPDServicioPublicoValorFacturadoProducto();
+                    List<extensionSPDservicioPublicoValorFacturadoproducto> lproductos = new List<extensionSPDservicioPublicoValorFacturadoproducto>();
+                    extensionSPDservicioPublicoValorFacturadoproducto producto = new extensionSPDservicioPublicoValorFacturadoproducto();
                     foreach (FacturasD det in ldetalle)
                     {
                         if (productos.Contains(det.codigo_c))
@@ -144,13 +170,13 @@ namespace WebAppElectronicInvoice.Controllers
                                 descuento = new documentoLineaDescuento();
                                 descuento.@base = det.valor;
                                 descuento.valor = subsidioFSSRI;
-                                descuento.porcentaje = (subsidioFSSRI / det.valor) * 100;
+                                descuento.porcentaje =Math.Round((subsidioFSSRI / det.valor) * 100,2);
                                 descuento.motivo = "Subsidio FSSRI";
                                 ldescuentos.Add(descuento);
                                 descuento = new documentoLineaDescuento();
                                 descuento.@base = det.valor;
                                 descuento.valor = subsidioFECF;
-                                descuento.porcentaje = (subsidioFECF / det.valor) * 100;
+                                descuento.porcentaje =Math.Round((subsidioFECF / det.valor) * 100,2);
                                 descuento.motivo = "Subsidio FECF";
                                 ldescuentos.Add(descuento);
                                 linea.unidadMedida = "MTQ";
@@ -159,7 +185,7 @@ namespace WebAppElectronicInvoice.Controllers
                                     descuento = new documentoLineaDescuento();
                                     descuento.@base = det.valor;
                                     descuento.valor = ajuste * -1;
-                                    descuento.porcentaje = ((ajuste * -1) / det.valor) * 100;
+                                    descuento.porcentaje =Math.Round(((ajuste * -1) / det.valor) * 100,2);
                                     descuento.motivo = "Ajuste";
                                     ldescuentos.Add(descuento);
                                     linea.descuentoLinea = subsidioFSSRI + subsidioFECF + (ajuste * -1);
@@ -170,17 +196,19 @@ namespace WebAppElectronicInvoice.Controllers
                                     linea.cargoLinea = ajuste * -1;
                                     cargo = new documentoLineaCargo();
                                     cargo.@base = det.valor;
-                                    cargo.valor = ajuste * -1;
-                                    cargo.porcentaje = ((ajuste * -1) / det.valor) * 100;
+                                    cargo.valor = ajuste;
+                                    cargo.porcentaje =Math.Round((ajuste/det.valor) * 100,2);
                                     cargo.motivo = "Ajuste";
                                     lcargos.Add(cargo);
                                 }
-                                linea.descuentos = ldescuentos.ToArray();
-                                linea.cargos = lcargos.ToArray();
+                                descuentos.descuento = ldescuentos.ToArray();
+                                cargos.cargo = lcargos.ToArray();
+                                linea.descuentos = descuentos;
+                                linea.cargos = cargos;
                                 linea.unidadesLinea = det.consumo;
                                 linea.precioUnidad = det.valor / det.consumo;
                                 linea.subtotalLinea = det.valor;
-
+                                //linea.descuentoLinea = 0;
                                 //llenar la información que se registra en la sección de SPD
                                 producto.totalUnidades = det.consumo;
                                 producto.unidadMedidaTotal = "MTQ";
@@ -189,26 +217,26 @@ namespace WebAppElectronicInvoice.Controllers
                                 producto.unidadMedidaConsumida = "MTQ";
                                 producto.valorConsumoParcial = det.valor;
                                 producto.valorUnitario = det.valor / det.consumo;
-                                List<documentoExtensionSPDServicioPublicoValorFacturadoProductoDescuentos> ldctos = new List<documentoExtensionSPDServicioPublicoValorFacturadoProductoDescuentos>();
-                                List<documentoExtensionSPDServicioPublicoValorFacturadoProductoCargos> lcargofac = new List<documentoExtensionSPDServicioPublicoValorFacturadoProductoCargos>();
-                                documentoExtensionSPDServicioPublicoValorFacturadoProductoDescuentos dctos = new documentoExtensionSPDServicioPublicoValorFacturadoProductoDescuentos();
+                                List<extensionSPDservicioPublicoValorFacturadoProductoDescuento> ldctos = new List<extensionSPDservicioPublicoValorFacturadoProductoDescuento>();
+                                List<extensionSPDservicioPublicoValorFacturadoProductoCargo> lcargofac = new List<extensionSPDservicioPublicoValorFacturadoProductoCargo>();
+                                extensionSPDservicioPublicoValorFacturadoProductoDescuento dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
                                 dctos.razonDescuento = "Subsidio FSSRI";
                                 dctos.valorDto = subsidioFSSRI;
                                 ldctos.Add(dctos);
-                                dctos = new documentoExtensionSPDServicioPublicoValorFacturadoProductoDescuentos();
+                                dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
                                 dctos.razonDescuento = "Subsidio FECF";
                                 dctos.valorDto = subsidioFECF;
                                 ldctos.Add(dctos);
                                 if (ajuste < 0)
                                 {
-                                    dctos = new documentoExtensionSPDServicioPublicoValorFacturadoProductoDescuentos();
+                                    dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
                                     dctos.razonDescuento = "Ajuste";
-                                    dctos.valorDto = ajuste;
+                                    dctos.valorDto = ajuste*-1;
                                     ldctos.Add(dctos);
                                 }
                                 else
                                 {
-                                    documentoExtensionSPDServicioPublicoValorFacturadoProductoCargos carfact = new documentoExtensionSPDServicioPublicoValorFacturadoProductoCargos();
+                                    extensionSPDservicioPublicoValorFacturadoProductoCargo carfact = new extensionSPDservicioPublicoValorFacturadoProductoCargo();
                                     carfact.razonCargo = "Ajuste";
                                     carfact.valorCargo = ajuste;
                                     lcargofac.Add(carfact);
@@ -222,6 +250,7 @@ namespace WebAppElectronicInvoice.Controllers
                                 linea.unidadesLinea = 1;
                                 linea.precioUnidad = det.valor;
                                 linea.subtotalLinea = det.valor;
+                                linea.descuentoLinea = 0;
                                 // se cargan los demás conceptos diferentes a consumos
                                 producto.totalUnidades = 1;
                                 producto.unidadMedidaTotal = "94";
@@ -232,8 +261,8 @@ namespace WebAppElectronicInvoice.Controllers
                                 producto.valorUnitario = det.valor;
 
                             }
-                            List<documentoExtensionSPDServicioPublicoValorFacturadoProductoLecturaContador> llecturas = new List<documentoExtensionSPDServicioPublicoValorFacturadoProductoLecturaContador>();
-                            documentoExtensionSPDServicioPublicoValorFacturadoProductoLecturaContador lectura = new documentoExtensionSPDServicioPublicoValorFacturadoProductoLecturaContador();
+                            List<extensionSPDservicioPublicoValorFacturadoProductoLecturaContador> llecturas = new List<extensionSPDservicioPublicoValorFacturadoProductoLecturaContador>();
+                            extensionSPDservicioPublicoValorFacturadoProductoLecturaContador lectura = new extensionSPDservicioPublicoValorFacturadoProductoLecturaContador();
                             lectura.datosMedidor = Cliente.Nmedidor;
                             lectura.unidadesLecturaAnterior = lectura1.lect_anterior;
                             lectura.unidadMedidaAnterior = "MTQ";
@@ -244,12 +273,13 @@ namespace WebAppElectronicInvoice.Controllers
                             producto.lecturaContador = llecturas.ToArray();
                             lproductos.Add(producto);
                             subtotal += det.valor;
-                            linea.totalLinea = det.valor + linea.cargoLinea - linea.descuentoLinea;
+                            linea.totalLinea = det.valor + lcargos.Sum(x=>x.valor) - ldescuentos.Sum(x=>x.valor);
                             lLineas.Add(linea);
+                            lineas.linea = lLineas.ToArray();
+                            factura.lineas =lineas ;
                         }
-                        factura.lineas = lLineas.ToArray();
                     }
-                    documentoDatosTotales totales = new documentoDatosTotales();
+                    documentodatosTotales totales = new documentodatosTotales();
                     totales.subtotal = subtotal;
                     totales.porcDescuentoFinal = 0;
                     totales.descuentoFinal = (ajuste < 0) ? subsidioFECF + subsidioFSSRI + ajuste : subsidioFECF + subsidioFSSRI;
@@ -257,49 +287,49 @@ namespace WebAppElectronicInvoice.Controllers
                     totales.totalBase = subtotal;
                     totales.totalImpuestos = 0;
                     totales.totalGastos = 0;
-                    totales.totalDocumento = totales.totalBase + totales.totalImpuestos + totales.totalGastos;
+                    totales.totalDocumento = subtotal ;
                     totales.totalRetenciones = 0;
                     totales.totalAnticipos = 0;
-                    totales.aPagar = totales.totalDocumento - totales.descuentoFinal + totales.totalCargos;
+                    totales.aPagar = fact.valor_total;
                     factura.datosTotales = totales;
-                    List<documentoCondicionPago> lcondiciones = new List<documentoCondicionPago>();
-                    documentoCondicionPago condicionpago = new documentoCondicionPago();
-                    condicionpago.formaPago = "1";
-                    condicionpago.medioPago = "10";
-                    lcondiciones.Add(condicionpago);
-                    factura.condicionesPago = lcondiciones.ToArray();
-                    ServiceInvoway.documentoExtensionSPD extSPD = new documentoExtensionSPD();
+                    documentocondicionesPago condicionesPago = new documentocondicionesPago();
+                    documentocondicionPago condicionPago = new documentocondicionPago();
+                    condicionPago.formaPago = "1";
+                    condicionPago.medioPago = "10";
+                    condicionesPago.condicionPago = condicionPago;
+                    factura.condicionesPago = condicionesPago;
+                    documentoExtensionSPD extSPD = new documentoExtensionSPD();
 
                     extSPD.referenciaPago = fact.numfact;
                     extSPD.estratoPredio = Convert.ToInt16(Cliente.estrato).ToString();
                     extSPD.tipoUsoPredio = Cliente.uso;
-                    documentoExtensionSPDServicioPublico servicio = new documentoExtensionSPDServicioPublico();
+                    extensionSPDservicioPublico servicio = new extensionSPDservicioPublico();
                     servicio.numLinea = "1";
                     servicio.indTercero = "N";
                     servicio.servicioFacturado = "GAS";
                     servicio.empresa = "ENERCER";
-                    servicio.motivo = "";
+                    servicio.motivo = "Facturacion servicio publico";
                     servicio.numeroContrato = Cliente.matricula.ToString();
-                    List<documentoExtensionSPDServicioPublicoSubscriptor> lsuscriptor = new List<documentoExtensionSPDServicioPublicoSubscriptor>();
-                    documentoExtensionSPDServicioPublicoSubscriptor suscriptor = new documentoExtensionSPDServicioPublicoSubscriptor();
+                    List<extensionSPDservicioPublicosuscriptor> lsuscriptor = new List<extensionSPDservicioPublicosuscriptor>();
+                    extensionSPDservicioPublicosuscriptor suscriptor = new extensionSPDservicioPublicosuscriptor();
                     suscriptor.nombre = Cliente.Nombre_cliente + ' ' + Cliente.Apellido1_cliente + ' ' + Cliente.Apellido2_Cliente + ' ' + Cliente.Razon_social;
                     suscriptor.direccionPostal = Cliente.Direccion_cliente;
                     suscriptor.direccionEntrega = Cliente.Direccion_cliente;
-                    suscriptor.ciudad = Cliente.nomciudad;
+                    suscriptor.ciudad = Cliente.ciudad_cliente;
                     suscriptor.departamento = Cliente.departamento_cliente;
                     suscriptor.pais = "CO";
                     suscriptor.tipoEstrato = Convert.ToInt16(Cliente.estrato).ToString();
                     suscriptor.email = Cliente.email_cliente;
                     lsuscriptor.Add(suscriptor);
                     servicio.subscriptor = lsuscriptor.ToArray();
-                    List<documentoExtensionSPDServicioPublicoValorFacturado> lvalfactura = new List<documentoExtensionSPDServicioPublicoValorFacturado>();
-                    documentoExtensionSPDServicioPublicoValorFacturado valfactura = new documentoExtensionSPDServicioPublicoValorFacturado();
-                    valfactura.ciclo = "1 Mes";
+                    List<extensionSPDservicioPublicovalorFacturado> lvalfactura = new List<extensionSPDservicioPublicovalorFacturado>();
+                    extensionSPDservicioPublicovalorFacturado valfactura = new extensionSPDservicioPublicovalorFacturado();
+                    valfactura.ciclo = "1";
                     valfactura.tipoPeriodicidad = "1";
                     valfactura.producto = lproductos.ToArray();
                     lvalfactura.Add(valfactura);
                     servicio.valorFacturado = lvalfactura.ToArray();
-                    List<documentoExtensionSPDServicioPublico> lservicios = new List<documentoExtensionSPDServicioPublico>();
+                    List<extensionSPDservicioPublico> lservicios = new List<extensionSPDservicioPublico>();
                     lservicios.Add(servicio);
                     extSPD.servicioPublico = lservicios.ToArray();
                     factura.extensionSPD = extSPD;
@@ -307,7 +337,7 @@ namespace WebAppElectronicInvoice.Controllers
             }
             try
             {
-                var resultado = await EnviarSolicitudSOAP(url, factura);
+                var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
                 return Json(new { success = true, response = resultado });
             }
             catch (Exception ex)
@@ -349,32 +379,70 @@ namespace WebAppElectronicInvoice.Controllers
                         <wsse:Security soapenv:mustUnderstand=""0"" xmlns:wsse=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecuritysecext-
                             1.0.xsd"" xmlns:wsu=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurityutility-1.0.xsd"">
                             <wsse:UsernameToken wsu:Id=""UsernameToken-2"">
-                            <wsse:Username>enercer-int</wsse:Username>
-                            <wsse:Password type=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"">5cMI7c6w6£pv</wsse:Password>
+                            <wsse:Username>{usuario}</wsse:Username>
+                            <wsse:Password type=""http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"">{contraseña}</wsse:Password>
                             </wsse:UsernameToken>
                         </wsse:Security>
                     </soapenv:Header>
                    <soapenv:Body>
                       <impl:entregaFactura>
-                         {xmlContenido}
+                            <impl:request>
+                                {xmlContenido}
+                            </impl:request>
                       </impl:entregaFactura>
                    </soapenv:Body>
                 </soapenv:Envelope>";
         }
 
-        public async Task<string> EnviarSolicitudSOAP(string url, documento factura)
+
+        public async Task<string> EnviarSolicitudSOAPAsync(string url, string usuario, string contrasena, documento factura)
         {
             string xmlcontenido = SerializarEntidadXML(factura);
             string soapEnvelope = ConstruirSoapEnvelope(xmlcontenido);
+
             using (var client = new HttpClient())
             {
-                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
-                var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
-                var response = await client.PostAsync(url, content);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync();
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+                var authInfo = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{usuario}:{contrasena}"));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authInfo);
+
+                var content = new StringContent(soapEnvelope, Encoding.UTF8, "application/xml");
+                //content.Headers.ContentType = new MediaTypeHeaderValue("application/xop+xml");
+                //content.Headers.ContentType.Parameters.Add(new NameValueHeaderValue("type", "\"text/xml\""));
+                //content.Headers.Add("SOAPAction", "\"\"");
+                try
+                {
+                    var response = await client.PostAsync(url, content);
+                    //response.EnsureSuccessStatusCode();
+
+                    return await response.Content.ReadAsStringAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Error al consultar el servicio: {e.Message}");
+                    return null;
+                }
             }
-        }
+        } 
+        
+        
+        //public async Task<string> EnviarSolicitudSOAP(string url, documento factura)
+        //{
+            //string xmlcontenido = SerializarEntidadXML(factura);
+            //string soapEnvelope = ConstruirSoapEnvelope(xmlcontenido);
+            //using (var client = new HttpClient())
+            //{
+            //    ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
+            //    var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
+            //    var byteArray = Encoding.ASCII.GetBytes($"{usuario}:{contraseña}");
+            //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+            //    var response = await client.PostAsync(url, content);
+            //    Console.WriteLine(response);
+            //    //response.EnsureSuccessStatusCode();
+            //    return await response.Content.ReadAsStringAsync();
+            //}
+       // }
 
         private string ConvertirFecha(string fecha)
         {

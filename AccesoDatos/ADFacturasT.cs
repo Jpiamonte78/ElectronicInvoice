@@ -22,12 +22,14 @@ namespace AccesoDatos
             try
             {
                 sqlcon = GetConnIntegrin(ruta);
-                string query = "select ciclo,anio, periodo,numfact,codpredio,valor_tota,fecha,codigobarras from BdFacturasT";
+                string query = "select ciclo,anio, periodo,numfact,codpredio,valor_tota,fecha,codigobarras,terminal from BdFacturasT where valor_neto<>0";
                 SQLiteCommand cmd = new SQLiteCommand(query, sqlcon);
                 dr = cmd.ExecuteReader();
                 FacturasT factura = new FacturasT();
+                DateTime fechaant = DateTime.Now;
                 while(dr.Read())
                 {
+                    fechaant = (!string.IsNullOrEmpty(dr["terminal"].ToString()))? Convert.ToDateTime(dr["fecha"]):fechaant;
                     string feclim = dr["codigobarras"].ToString().Substring(dr["codigobarras"].ToString().Length-8);
                     factura = new FacturasT();
                     factura.ciclo = dr["ciclo"].ToString();
@@ -36,7 +38,7 @@ namespace AccesoDatos
                     factura.numfact = dr["numfact"].ToString();
                     factura.codpredio = dr["codpredio"].ToString();
                     factura.valor_total = Convert.ToDecimal(dr["valor_tota"]);
-                    factura.fecha = Convert.ToDateTime(dr["fecha"]);
+                    factura.fecha = fechaant;
                     factura.fecha_limite = Convert.ToDateTime(feclim.Substring(4,4)+'-'+feclim.Substring(2,2)+'-'+feclim.Substring(0,2));
                     lfacturas.Add(factura);
                 }
