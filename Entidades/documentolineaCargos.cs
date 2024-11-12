@@ -10,6 +10,7 @@ namespace Entidades
     [Serializable]
     public class documentolineaCargos
     {
+        [XmlElement]
         public documentoLineaCargo[] cargo { get; set; }
     }
 }

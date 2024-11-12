@@ -67,9 +67,9 @@ namespace Entidades
         [XmlElement]
         public documentoAnticipo[] anticipos { get; set; }
         [XmlElement]
-        public documentoDescuento[] descuentos { get; set; }
+        public documentolineaDescuentos descuentos { get; set; }
         [XmlElement]
-        public documentoCargo[] cargos { get; set; }
+        public documentolineaCargos cargos { get; set; }
         [XmlElement]
         public documentodatosTotales datosTotales { get; set; }
         [XmlElement]

@@ -23,7 +23,7 @@ namespace AccesoDatos
             try
             {
                 con = GetConnIntegrin(ruta);
-                string query = "select a.ciclo,a.anio,a.periodo,a.numfac,a.codpredio,a.codigo_c,b.nombre_c,a.valor from BdFacturasD a inner join BdConceptos b on a.codigo_c=b.codigo_c";
+                string query = "select a.ciclo,a.anio,a.periodo,a.numfac,a.codpredio,a.codigo_c,b.nombre_c,a.valor,CASE  WHEN instr(a.cantidad,'/')>0 THEN 1 ELSE a.cantidad end as cantidad from BdFacturasD a inner join BdConceptos b on a.codigo_c=b.codigo_c";
                 SQLiteCommand cmd = new SQLiteCommand(query, con);
                 dr = cmd.ExecuteReader();
                 FacturasD detalle = new FacturasD();
@@ -38,6 +38,7 @@ namespace AccesoDatos
                     detalle.codigo_c = dr["codigo_c"].ToString();
                     detalle.nombre_c = dr["nombre_c"].ToString();
                     detalle.valor = Convert.ToDecimal(dr["valor"],culture);
+                    detalle.cantidad = Convert.ToInt32(dr["cantidad"]);
                     ldetalle.Add(detalle);
                 }
                 reg = InsertarFacturasD(ldetalle);
@@ -73,6 +74,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("codigo_c", fact.codigo_c);
                     cmd.Parameters.AddWithValue("nombre_c",fact.nombre_c);
                     cmd.Parameters.AddWithValue("valor", fact.valor);
+                    cmd.Parameters.AddWithValue("cantidad", fact.cantidad);
                     try
                     {
                         reg += cmd.ExecuteNonQuery();
@@ -107,6 +109,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("codigo_c", DBNull.Value);
                     cmd.Parameters.AddWithValue("nombre_c", DBNull.Value);
                     cmd.Parameters.AddWithValue("valor", DBNull.Value);
+                    cmd.Parameters.AddWithValue("cantidad", DBNull.Value);
                     try
                     {
                         FacturasD Dfact = new FacturasD();
@@ -122,6 +125,7 @@ namespace AccesoDatos
                             Dfact.nombre_c = dr["nombre_c"].ToString();
                             Dfact.valor = Convert.ToDecimal(dr["valor"]);
                             Dfact.consumo = Convert.ToInt32(dr["consumo"]);
+                            Dfact.cantidad = Convert.ToInt32(dr["cantidad"]);
                             ldetalle.Add(Dfact);
                         }
                     }

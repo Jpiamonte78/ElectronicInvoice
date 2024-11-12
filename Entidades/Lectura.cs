@@ -18,5 +18,11 @@ namespace Entidades
         public decimal consumo { get; set; }
         public decimal consumo_promedio { get; set; }
         public DateTime fecha_lectura { get; set; }
+        public int consumo1 { get; set; }
+        public int consumo2 { get; set; }
+        public int consumo3 { get; set; }
+        public int consumo4 { get; set; }
+        public int consumo5 { get; set; }
+        public int consumo6 { get; set; }
     }
 }

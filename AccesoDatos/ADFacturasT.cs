@@ -90,7 +90,7 @@ namespace AccesoDatos
             return reg;
         }
 
-        public List<FacturasT> Consultar_Facturas(DateTime fecha)
+        public List<FacturasT> Consultar_Facturas()
         {
             List<FacturasT> lfacturas = new List<FacturasT>();
             using (SqlConnection conn = GetConnDB())
@@ -98,6 +98,7 @@ namespace AccesoDatos
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SpFacturasT";
+                    cmd.CommandTimeout = 3600;
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("accion", "Consultar");
                     cmd.Parameters.AddWithValue("id_factura", DBNull.Value);
@@ -107,7 +108,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("numfact", DBNull.Value);
                     cmd.Parameters.AddWithValue("codpredio", DBNull.Value);
                     cmd.Parameters.AddWithValue("valor_total", DBNull.Value);
-                    cmd.Parameters.AddWithValue("fecha", fecha);
+                    cmd.Parameters.AddWithValue("fecha", DBNull.Value);
                     cmd.Parameters.AddWithValue("fecha_limite", DBNull.Value);
                     try
                     {
@@ -118,13 +119,44 @@ namespace AccesoDatos
                             fact = new FacturasT();
                             fact.id_factura = Convert.ToInt32(dr["id_factura"]);
                             fact.ciclo = dr["ciclo"].ToString();
+                            fact.Prefijo = dr["Prefijo"].ToString();
                             fact.anio = Convert.ToInt32(dr["anio"]);
                             fact.periodo = dr["periodo"].ToString();
+                            fact.fechainiperiodo = dr["fechainiperiodo"].ToString();
+                            fact.fechafinperiodo = dr["fechafinperiodo"].ToString();
                             fact.numfact = dr["numfact"].ToString();
                             fact.codpredio = dr["codpredio"].ToString();
                             fact.valor_total = Convert.ToDecimal(dr["valor_total"]);
                             fact.fecha = Convert.ToDateTime(dr["fecha"]);
                             fact.fecha_limite = Convert.ToDateTime(dr["fecha_limite"]);
+                            fact.Id_Cliente_integrin = Convert.ToInt32(dr["Id_Cliente_Integrin"]);
+                            fact.Codpredio = dr["codpredio"].ToString();
+                            fact.tipo_identificacion = Convert.ToInt16(dr["tipo_identificacion"]);
+                            fact.Identificacion = dr["Identificacion"].ToString().Trim();
+                            fact.dv = dr["dv"].ToString();
+                            fact.tipo_persona = Convert.ToInt16(dr["tipo_persona"]);
+                            fact.Razon_social = dr["Razon_social"].ToString();
+                            fact.Nombre_cliente = dr["Nombre_cliente"].ToString();
+                            fact.Apellido1_cliente = dr["apellido1_cliente"].ToString();
+                            fact.Apellido2_Cliente = dr["apellido2_cliente"].ToString();
+                            fact.Direccion_cliente = dr["Direccion_cliente"].ToString();
+                            fact.ciudad_cliente = dr["ciudad_cliente"].ToString().Trim();
+                            fact.departamento_cliente = dr["departamento_cliente"].ToString().Trim();
+                            fact.telefono_cliente = dr["telefono_cliente"].ToString();
+                            fact.email_cliente = dr["email_cliente"].ToString();
+                            fact.zona_postal = dr["zona_postal"].ToString();
+                            fact.ciclo = dr["ciclo"].ToString();
+                            fact.uso = dr["uso"].ToString();
+                            fact.estrato = dr["estrato"].ToString();
+                            fact.Nmedidor = dr["Nmedidor"].ToString();
+                            fact.matricula = dr["matricula"].ToString();
+                            fact.zona_postal = dr["zona_postal"].ToString();
+                            fact.resp_rut = dr["resp_rut"].ToString();
+                            fact.tributos = dr["tributos"].ToString();
+                            fact.actualizado = Convert.ToBoolean(dr["actualizado"]);
+                            fact.nomciudad = dr["nomciudad"].ToString();
+                            fact.nomdepto = dr["nomdepto"].ToString();
+                            fact.mensaje = dr["mensaje"].ToString();
                             lfacturas.Add(fact);
                         }
                     }

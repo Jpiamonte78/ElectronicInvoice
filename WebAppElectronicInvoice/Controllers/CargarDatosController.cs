@@ -44,7 +44,7 @@ namespace WebAppElectronicInvoice.Controllers
                 int cargadosD = CargarDetalles(rutacompleta);
                 int cargalect = CargarLecturas(rutacompleta);
                 int cargatari = CargarTarifas(rutacompleta);
-
+                int cargafinan = CargarFinanciacion(rutacompleta);
                 if(!IsFileInUse(new FileInfo(rutacompleta)))
                 {
                     System.IO.File.Delete(rutacompleta);
@@ -124,6 +124,21 @@ namespace WebAppElectronicInvoice.Controllers
             }
             catch (Exception ex)
             {
+                throw ex;
+            }
+            return reg;
+        }
+
+        private int CargarFinanciacion(string rutadb)
+        {
+            int reg = 0;
+            try
+            {
+                reg = new ADFinancia().Consultar_financia(rutadb);
+            }
+            catch (Exception ex)
+            {
+
                 throw ex;
             }
             return reg;

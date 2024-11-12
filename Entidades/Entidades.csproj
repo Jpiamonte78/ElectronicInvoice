@@ -67,6 +67,7 @@
     <Compile Include="documentoProveedor.cs" />
     <Compile Include="documentoReferenciado.cs" />
     <Compile Include="documentoRetencion.cs" />
+    <Compile Include="Envio_Factura.cs" />
     <Compile Include="extensionSPDservicioPublico.cs" />
     <Compile Include="extensionSPDservicioPublicosuscriptor.cs" />
     <Compile Include="extensionSPDservicioPublicovalorFacturado.cs" />
@@ -79,6 +80,7 @@
     <Compile Include="extensionSPDservicioPublicoValorFacturadoProductoLecturaContador.cs" />
     <Compile Include="FacturasD.cs" />
     <Compile Include="FacturasT.cs" />
+    <Compile Include="Financia.cs" />
     <Compile Include="Lectura.cs" />
     <Compile Include="MaeDepto.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -88,5 +90,6 @@
     <Compile Include="TipoPersona.cs" />
     <Compile Include="Tributos.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

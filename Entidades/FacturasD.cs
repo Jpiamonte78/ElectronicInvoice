@@ -18,5 +18,6 @@ namespace Entidades
 	    public string nombre_c { get; set; }
 	    public decimal valor { get; set; }
         public int consumo { get; set; }
+        public int cantidad { get; set; }
     }
 }

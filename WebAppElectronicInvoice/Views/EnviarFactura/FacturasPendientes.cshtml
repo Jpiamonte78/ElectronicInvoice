@@ -1,0 +1,112 @@
+﻿@model IEnumerable<Entidades.FacturasT>
+
+@{
+    ViewBag.Title = "FacturasPendientes";
+}
+
+<h2>Facturas Pendientes</h2>
+
+<div style="height:450px;overflow:scroll">
+    <table class="table table-bordered table-responsive-sm" >
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Codpredio)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ciclo)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Prefijo)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.periodo)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.numfact)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.valor_total)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.mensaje)
+            </th>
+        </tr>
+
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Codpredio)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ciclo)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Prefijo)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.periodo)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.numfact)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.valor_total)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.mensaje)
+                </td>
+            </tr>
+        }
+    </table>
+</div>
+<div class="form-vertical">
+    <div id="loading" class="spinner-border text-primary" role="status">
+        <span class="visually-hidden"> Loading...</span>
+    </div>
+    <div class="form-group">
+        <div class="col-md-offset-2 col-md-10">
+            <input type="submit" value="Enviar" class="btn btn-success" id="btnenviar" />
+        </div>
+    </div>
+</div>
+@section Scripts
+{
+    <style>
+        #loading {
+            display: none;
+        }
+    </style>
+    <script>
+        $(document).ready(function () {
+            $('#btnenviar').click(async function () {
+                let url = `/EnviarFactura/EnviarFacturas`
+
+                $('#btnenviar').prop('disabled', true);
+                $('#loading').show();
+                try {
+                    let response = await $.ajax({
+                        url: url,
+                        type: 'GET'
+                    });
+                    console.log('Respuesta del servidor: ', response);
+                    if (response.success) {
+                        console.log(response.message);
+                        $('#loading').hide();
+                        $('#btnenviar').prop('disabled', false);
+                        alert('Cargue exitoso: ' + response.message);
+                    }
+                    else {
+                        alert('Error: ' + response.message);
+                    }
+                }
+                catch (error){
+                    console.error('Error en la solicitud: ', error)
+                    $('#loading').hide();
+                    $('#btnenviar').prop('disabled', false);
+                    alert('Error en la solicitud');
+                }
+            });
+        });
+    </script>
+}

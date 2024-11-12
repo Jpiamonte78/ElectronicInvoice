@@ -80,8 +80,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ADClienteIntegrin.cs" />
+    <Compile Include="ADEnvio_Factura.cs" />
     <Compile Include="ADFacturasD.cs" />
     <Compile Include="ADFacturasT.cs" />
+    <Compile Include="ADFinancia.cs" />
     <Compile Include="ADLecturas.cs" />
     <Compile Include="ADParametrosGenerales.cs" />
     <Compile Include="ADTarifas.cs" />

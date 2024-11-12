@@ -1,0 +1,64 @@
+﻿@model IEnumerable<Entidades.Envio_Factura>
+
+@{
+    ViewBag.Title = "Documentos Enviados";
+}
+
+<h2>Documentos Enviados</h2>
+@if (ViewBag.ErrorMessage != null)
+    {<div style="color:red;"> @ViewBag.ErrorMessage </div>
+}
+
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Numfactura)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Codpredio)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.codigo_respuesta)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.mensaje_respuesta)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.fecha_envio)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.fecha)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.valor_total)
+        </th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Numfactura)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Codpredio)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.codigo_respuesta)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.mensaje_respuesta)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.fecha_envio)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.fecha)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.valor_total)
+            </td>
+        </tr>
+    }
+
+</table>

@@ -5,65 +5,77 @@
 
 <h2>Envio Facturas</h2>
 <hr />
-@using(Html.BeginForm())
-{
+
     <div class="form-vertical">
         <div class="form-group">
             <label for="txtfecha" class="form-label">Fecha Factura</label>
             <input id="txtfecha" type="date" class="form-control" autofocus />
         </div>
+        <div id="loading" class="spinner-border text-primary" role="status">
+            <span class="visually-hidden"> Loading...</span>
+        </div>
         <div class="form-group">
             <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Guardar" class="btn btn-success" id="btnenviar" />
+                <input type="submit" value="Enviar" class="btn btn-success" id="btnenviar" />
             </div>
         </div>
     </div>
-}
+    <hr />
+    <div id="resultado"></div>
 @section Scripts
 {
-    <script type="text/javascript">
+    <style>
+        #loading {
+            display:none;
+        }
+    </style>
+    <script>
         $(document).ready(function () {
             $('#btnenviar').click(async function () {
-                var fecharep = $('#txtfecha').val();
+                let fecharep = $('#txtfecha').val();
                 console.log('Fecha a Enviar: ', fecharep);
+                let url = `/EnviarFactura/EnviarFacturas?fecha=${encodeURIComponent(fecharep)}`
+
+                $('#btnenviar').prop('disabled', true);
+                $('#loading').show();
                 try {
                     let response = await $.ajax({
-                        url: '/EnviarFactura/EnviarFacturas',
-                        type: 'GET',
-                        data: { fecha: fecharep }
+                        url: url,
+                        type: 'GET'
                     });
-
-                    console.log('Solicitud AJAX exitosa');
-                    console.log('Respuesta del servidor:', response);
-
+                    console.log('Respuesta del servidor: ', response);
                     if (response.success) {
-                        alert(response.response || "Operación exitosa!");
-                    } else {
-                        alert(response.message || 'Error');
+                        console.log(response.message);
+                        alert('Cargue exitoso: ' + response.message);
+                        let url2 = `/Envio_Factura/Envio_Documentos?fecha=${encodeURIComponent(fecharep)}`;
+                        $.ajax({
+                            url: url2,
+                            type: 'GET',
+                            success: function (response) {
+                                console.log('Respuesta del servidor:', response);
+                                $('#loading').hide();
+                                $('#btnenviar').prop('disabled', false);
+                                // Ocultar el indicador de carga 
+                                $('#resultado').html(response); // Insertar la vista parcial en el div 
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                console.error('Error en la solicitud:', textStatus, errorThrown);
+                                $('#loading').hide(); // Ocultar el indicador de carga 
+                                $('#btnenviar').prop('disabled', false);
+                                alert('Error en la solicitud: ' + errorThrown);
+                            }
+                        });
                     }
-                } catch (error) {
-                    console.error('Error en la solicitud AJAX:', error);
+                    else {
+                        alert('Error: ' + response.message);
+                    }
+                }
+                catch (error){
+                    console.error('Error en la solicitud: ', error)
+                    $('#loading').hide();
+                    $('#btnenviar').prop('disabled', false);
                     alert('Error en la solicitud');
                 }
-
-                //$.ajax({
-                //    url: '/EnviarFactura/EnviarFacturas',
-                //    type: 'POST',
-                //    data: { fecha: fecharep },
-                //    success: function (response) {
-                //        console.log('Solicitud AJAX exitosa');
-                //        console.log('Respuesta del servidor:', response);
-                //        if (response.success) {
-                //            alert(response.message || "Operación exitosa!");
-                //        } else {
-                //            alert(response.message || 'Error');
-                //        }
-                //    },
-                //    error: function (jqXHR, textStatus, errorThrown) {
-                //        console.error('Error en la solicitud:', textStatus, errorThrown);
-                //        alert('Error en la solicitud');
-                //    }
-                //});
             });
         });
     </script>
