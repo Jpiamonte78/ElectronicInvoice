@@ -225,6 +225,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\MyViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Security\SecurityHeader.cs" />
   </ItemGroup>
@@ -285,10 +286,10 @@
     <Content Include="Views\EnviarFactura\Index.cshtml" />
     <Content Include="Views\Envio_Factura\Envio_Documentos.cshtml" />
     <Content Include="Views\EnviarFactura\FacturasPendientes.cshtml" />
+    <Content Include="Views\Cliente\Clienteintegrin.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
-    <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.rtl.min.css.map" />

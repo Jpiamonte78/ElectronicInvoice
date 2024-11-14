@@ -81,12 +81,12 @@ namespace WebAppElectronicInvoice.Controllers
                     lectura1 = new ADLecturas().Consultar_lecturas_suscriptor(fact.codpredio, ciclo, periodo, anio);
                     codsus = fact.codpredio;
                     docCliente = new documentoCliente();
-                    if(fact.Identificacion!=null)
+                    if(!string.IsNullOrEmpty(fact.Identificacion))
                     {
                         factura.numeroDocumento = fact.Prefijo+fact.numfact;
                         factura.tipoDocumento = "DE";
                         factura.subtipoDocumento = "60";
-                        factura.tipoOperacion = "601";
+                        factura.tipoOperacion = "602"; //Facturación en Sitio
                         factura.divisa = "COP";
                         factura.fechaDocumento = ConvertirFecha(DateTime.Now.ToString(), "horas"); //ConvertirFecha(fact.fecha.ToString());
                         factura.unidadOrganizativa = "DEFAULT";
@@ -154,6 +154,7 @@ namespace WebAppElectronicInvoice.Controllers
                         productos[21] = "VA";
                         productos[22] = "VT";
                         productos[23] = "IS";
+                        productos[24] = "A2";
                         var resFSSRI = ldetalle.Where(x => x.codigo_c == "96").FirstOrDefault();
                         decimal subsidioFSSRI = 0;
                         if (resFSSRI != null)

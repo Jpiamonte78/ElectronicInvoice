@@ -5,11 +5,21 @@ using System.Web;
 using System.Web.Mvc;
 using AccesoDatos;
 using Entidades;
+using WebAppElectronicInvoice.Models;
 
 namespace WebAppElectronicInvoice.Controllers
 {
     public class ClienteController : Controller
     {
+        [HttpGet]
+        public ActionResult Clienteintegrin()
+        {
+            var pendientes = new ADClienteIntegrin().ConsultarPendientes();
+            var clientes = new ADClienteIntegrin().ConsultarTodos();
+
+            var model = new MyViewModel { Clientes = clientes, Pendientes = pendientes };
+            return View(model);
+        }
         // GET: Cliente
         public ActionResult Cliente()
         {
@@ -50,7 +60,7 @@ namespace WebAppElectronicInvoice.Controllers
             {
                 ViewBag.Mensaje = ex.Message;
             }
-            return RedirectToAction("Cliente");
+            return RedirectToAction("Clienteintegrin");
         }
         public JsonResult Consultar_Municipio(string codDepto)
         {
