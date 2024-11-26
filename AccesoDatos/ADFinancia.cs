@@ -23,34 +23,35 @@ namespace AccesoDatos
             SQLiteConnection con = new SQLiteConnection();
             try
             {
-                con = GetConnIntegrin(ruta);
                 string query = "select ciclo, anio,periodo,codigo_p,codigo_c,valor_c,valor_cu,cuotas,cuotas_pa from BdFinancia where cuotas_pa>0";
-                SQLiteCommand cmd = new SQLiteCommand(query, con);
-                dr = cmd.ExecuteReader();
-                Financia financia = new Financia();
-                while (dr.Read())
+                using (con = GetConnIntegrin(ruta))
                 {
-                    financia = new Financia();
-                    financia.ciclo = dr["ciclo"].ToString();
-                    financia.anio = dr["anio"].ToString();
-                    financia.periodo = dr["periodo"].ToString();
-                    financia.codigo_p = dr["codigo_p"].ToString();
-                    financia.codigo_c = dr["codigo_c"].ToString();
-                    financia.valor_c = Convert.ToDecimal(dr["valor_c"]);
-                    financia.valor_cu = Convert.ToDecimal(dr["valor_cu"]);
-                    financia.cuotas = Convert.ToInt16(dr["cuotas"]);
-                    financia.cuotas_pa = Convert.ToInt16(dr["cuotas_pa"]);
-                    lfinancia.Add(financia);
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, con))
+                    {
+                        dr = cmd.ExecuteReader();
+                        Financia financia = new Financia();
+                        while (dr.Read())
+                        {
+                            financia = new Financia();
+                            financia.ciclo = dr["ciclo"].ToString();
+                            financia.anio = dr["anio"].ToString();
+                            financia.periodo = dr["periodo"].ToString();
+                            financia.codigo_p = dr["codigo_p"].ToString();
+                            financia.codigo_c = dr["codigo_c"].ToString();
+                            financia.valor_c = Convert.ToDecimal(dr["valor_c"]);
+                            financia.valor_cu = Convert.ToDecimal(dr["valor_cu"]);
+                            financia.cuotas = Convert.ToInt16(dr["cuotas"]);
+                            financia.cuotas_pa = Convert.ToInt16(dr["cuotas_pa"]);
+                            lfinancia.Add(financia);
+                        }
+                        reg = insertar_Financia(lfinancia);
+                    }
                 }
-                reg = insertar_Financia(lfinancia);
             }
             catch (Exception ex)
             {
-                throw new ApplicationException("Se ha presentado error en Consultar_detalles: " + ex.Message, ex);
-            }
-            finally
-            {
                 con.Close();
+                throw new ApplicationException("Se ha presentado error en Consultar_detalles: " + ex.Message, ex);
             }
             return reg;
         }

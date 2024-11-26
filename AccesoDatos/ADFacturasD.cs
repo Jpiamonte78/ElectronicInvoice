@@ -23,7 +23,7 @@ namespace AccesoDatos
             try
             {
                 con = GetConnIntegrin(ruta);
-                string query = "select a.ciclo,a.anio,a.periodo,a.numfac,a.codpredio,a.codigo_c,b.nombre_c,a.valor,CASE  WHEN instr(a.cantidad,'/')>0 THEN 1 ELSE a.cantidad end as cantidad from BdFacturasD a inner join BdConceptos b on a.codigo_c=b.codigo_c";
+                string query = "select a.ciclo,a.anio,a.periodo,a.numfac,a.codpredio,a.codigo_c,b.nombre_c,a.valor,CASE  WHEN instr(a.cantidad,'/')>0 THEN 1 ELSE a.cantidad end as cantidad from BdFacturasD a inner join BdConceptos b on a.codigo_c=b.codigo_c inner join BdFacturasT c on a.codpredio=c.codpredio and a.numfac=c.numfact where a.valor<>0 and c.terminal is not null";
                 SQLiteCommand cmd = new SQLiteCommand(query, con);
                 dr = cmd.ExecuteReader();
                 FacturasD detalle = new FacturasD();

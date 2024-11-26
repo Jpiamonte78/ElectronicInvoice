@@ -20,6 +20,7 @@ namespace Entidades
         public DateTime fecha { get; set; }
         public DateTime fecha_limite { get; set; }
         public string mensaje { get; set; }
+        public int atraso { get; set; }
 
 
     }

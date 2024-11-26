@@ -11,7 +11,7 @@ using System.Globalization;
 
 namespace AccesoDatos
 {
-    public  class ADLecturas:ConexionBD
+    public class ADLecturas : ConexionBD
     {
         CultureInfo culture = new CultureInfo("en-US");
         public int Consultar_Lecturas(string ruta)
@@ -23,11 +23,11 @@ namespace AccesoDatos
             try
             {
                 sqlcon = GetConnIntegrin(ruta);
-                string query = "select ciclo,anio, periodo,codigo,lect_ant,lect_act,consumo,promedio,fecha_lect,consumo1,consumo2,consumo3,consumo4,consumo5,consumo6 from BdLecturas where fecha_lect is not NULL";
+                string query = "select ciclo,anio, periodo,codigo,ifnull(lect_ant,0) as lect_ant,ifnull(lect_act,0) as lect_act,ifnull(consumo,0) as consumo,ifnull(promedio,0) as promedio,fecha_lect,ifnull(consumo1,0) as consumo1,ifnull(consumo2,0) as consumo2,ifnull(consumo3,0) as consumo3,ifnull(consumo4,0) as consumo4,ifnull(consumo5,0) as consumo5,ifnull(consumo6,0) as consumo6 from BdLecturas where fecha_lect is not NULL";
                 SQLiteCommand cmd = new SQLiteCommand(query, sqlcon);
                 dr = cmd.ExecuteReader();
                 Lectura lectura = new Lectura();
-                while (dr.Read())   
+                while (dr.Read())
                 {
                     string fecha = dr["fecha_lect"].ToString();
                     string formatof = "ddd MMM dd yyyy HH:mm:ss 'GMT'K '(hora estándar de Colombia)'";
@@ -36,10 +36,10 @@ namespace AccesoDatos
                     lectura.anio = Convert.ToInt32(dr["anio"]);
                     lectura.periodo = dr["periodo"].ToString();
                     lectura.codigo_p = dr["codigo"].ToString();
-                    lectura.lect_anterior = Convert.ToInt32(dr["lect_ant"]);
-                    lectura.lect_actual = Convert.ToInt32(dr["lect_act"]);
-                    lectura.consumo = Convert.ToInt32(dr["consumo"]);
-                    lectura.consumo_promedio = Convert.ToInt32(dr["promedio"]);
+                    lectura.lect_anterior = TryParseInt(dr["lect_ant"]);
+                    lectura.lect_actual = TryParseInt(dr["lect_act"]);
+                    lectura.consumo = TryParseInt(dr["consumo"]);
+                    lectura.consumo_promedio = TryParseInt(dr["promedio"]);
                     try
                     {
                         lectura.fecha_lectura = DateTime.ParseExact(fecha, formatof, CultureInfo.InvariantCulture);
@@ -48,12 +48,12 @@ namespace AccesoDatos
                     {
                         lectura.fecha_lectura = Convert.ToDateTime(fecha);
                     }
-                    lectura.consumo1 = Convert.ToInt32(dr["consumo1"]);
-                    lectura.consumo2 = Convert.ToInt32(dr["consumo2"]);
-                    lectura.consumo3 = Convert.ToInt32(dr["consumo3"]);
-                    lectura.consumo4 = Convert.ToInt32(dr["consumo4"]);
-                    lectura.consumo5 = Convert.ToInt32(dr["consumo5"]);
-                    lectura.consumo6 = Convert.ToInt32(dr["consumo6"]);
+                    lectura.consumo1 = TryParseInt(dr["consumo1"]);
+                    lectura.consumo2 = TryParseInt(dr["consumo2"]);
+                    lectura.consumo3 = TryParseInt(dr["consumo3"]);
+                    lectura.consumo4 = TryParseInt(dr["consumo4"]);
+                    lectura.consumo5 = TryParseInt(dr["consumo5"]);
+                    lectura.consumo6 = TryParseInt(dr["consumo6"]);
                     lLecturas.Add(lectura);
                 }
                 reg = InsertarLecturas(lLecturas);
@@ -83,7 +83,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("id_lecturas", DBNull.Value);
                     cmd.Parameters.AddWithValue("ciclo", lect.ciclo);
                     cmd.Parameters.AddWithValue("anio", lect.anio);
-                    cmd.Parameters.AddWithValue("periodo",lect.periodo);
+                    cmd.Parameters.AddWithValue("periodo", lect.periodo);
                     cmd.Parameters.AddWithValue("codigo_p", lect.codigo_p);
                     cmd.Parameters.AddWithValue("lect_actual", lect.lect_actual);
                     cmd.Parameters.AddWithValue("lect_anterior", lect.lect_anterior);
@@ -111,7 +111,7 @@ namespace AccesoDatos
             return reg;
         }
 
-        public Lectura Consultar_lecturas_suscriptor(string codsus, string ciclo,string periodo, int anio)
+        public Lectura Consultar_lecturas_suscriptor(string codsus, string ciclo, string periodo, int anio)
         {
             Lectura lect = new Lectura();
             using (SqlConnection conn = GetConnDB())
@@ -163,11 +163,20 @@ namespace AccesoDatos
                     }
                     catch (Exception ex)
                     {
-                        throw new ApplicationException("Consultar_lecturas_suscriptor: "+ex.Message,ex);
+                        throw new ApplicationException("Consultar_lecturas_suscriptor: " + ex.Message, ex);
                     }
                 }
             }
             return lect;
+        }
+
+        private int TryParseInt(object value)
+        {
+            if (value != null && int.TryParse(value.ToString(), out int result))
+            {
+                return result;
+            }
+            return 0; // Valor predeterminado en caso de que el dato no sea numérico o sea nulo }
         }
     }
 }

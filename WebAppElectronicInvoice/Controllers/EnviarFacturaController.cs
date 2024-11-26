@@ -28,6 +28,14 @@ using System.Diagnostics.Contracts;
 using System.Net.Http.Headers;
 using System.Web.UI.WebControls;
 using System.Xml.Linq;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Kernel.Geom;
+using iText.Layout.Element;
+using iText.Layout.Properties;
+using iText.IO.Font.Constants;
+using iText.Kernel.Font;
+using iText.Layout.Borders;
 
 namespace WebAppElectronicInvoice.Controllers
 {
@@ -39,6 +47,7 @@ namespace WebAppElectronicInvoice.Controllers
         string usuario = ConfigurationManager.AppSettings["UsuarioInvoway"];
         string contraseña = ConfigurationManager.AppSettings["PasswordInvoway"];
         string codsus = "";
+        CultureInfo culture = new CultureInfo("es-CO");
 
         // GET: EnviarFactura
         public ActionResult Index()
@@ -81,9 +90,9 @@ namespace WebAppElectronicInvoice.Controllers
                     lectura1 = new ADLecturas().Consultar_lecturas_suscriptor(fact.codpredio, ciclo, periodo, anio);
                     codsus = fact.codpredio;
                     docCliente = new documentoCliente();
-                    if(!string.IsNullOrEmpty(fact.Identificacion))
+                    if (!string.IsNullOrEmpty(fact.Identificacion))
                     {
-                        factura.numeroDocumento = fact.Prefijo+fact.numfact;
+                        factura.numeroDocumento = fact.Prefijo + fact.numfact;
                         factura.tipoDocumento = "DE";
                         factura.subtipoDocumento = "60";
                         factura.tipoOperacion = "602"; //Facturación en Sitio
@@ -133,7 +142,7 @@ namespace WebAppElectronicInvoice.Controllers
                         productos[0] = "01";
                         productos[1] = "02";
                         productos[2] = "16";
-                        productos[3] = "30";
+                        //productos[3] = "30";
                         productos[4] = "76";
                         productos[5] = "RX";
                         productos[6] = "SI";
@@ -196,62 +205,69 @@ namespace WebAppElectronicInvoice.Controllers
                                         descuento = new documentoLineaDescuento();
                                         descuento.@base = det.valor;
                                         descuento.valor = subsidioFSSRI * -1;
-                                        descuento.porcentaje = Math.Round(((subsidioFSSRI * -1) / det.valor) * 100, 2);
+                                        descuento.porcentaje = Math.Round(((subsidioFSSRI * -1) / det.valor) * 100, 4);
                                         descuento.motivo = "Subsidio FSSRI";
                                         ldescuentos.Add(descuento);
                                     }
                                     else
                                     {
-                                        cargo = new documentoLineaCargo();
-                                        cargo.@base = det.valor;
-                                        cargo.valor = subsidioFSSRI;
-                                        cargo.porcentaje = Math.Round((subsidioFSSRI / det.valor) * 100, 2);
-                                        cargo.motivo = "Subsidio FSSRI";
-                                        lcargos.Add(cargo);
+                                        if(subsidioFSSRI>0)
+                                        {
+                                            cargo = new documentoLineaCargo();
+                                            cargo.@base = (det.valor-subsidioFECF);
+                                            cargo.valor = subsidioFSSRI;
+                                            cargo.porcentaje = Math.Round((subsidioFSSRI / (det.valor-subsidioFECF)) * 100, 4);
+                                            cargo.motivo = "Subsidio FSSRI";
+                                            lcargos.Add(cargo);
+                                        }
                                     }
-
-                                    descuento = new documentoLineaDescuento();
-                                    descuento.@base = det.valor;
-                                    descuento.valor = subsidioFECF;
-                                    descuento.porcentaje = Math.Round((subsidioFECF / det.valor) * 100, 2);
-                                    descuento.motivo = "Subsidio FECF";
-                                    ldescuentos.Add(descuento);
+                                    //se retira el subsidio como descuento porque se está neteando en el consumo.
+                                    //descuento = new documentoLineaDescuento();
+                                    //descuento.@base = det.valor;
+                                    //descuento.valor = subsidioFECF;
+                                    //descuento.porcentaje = Math.Round((subsidioFECF / det.valor) * 100, 2);
+                                    //descuento.motivo = "Subsidio FECF";
+                                    //ldescuentos.Add(descuento);
                                     linea.unidadMedida = "MTQ";
                                     if (ajuste < 0)
                                     {
                                         descuento = new documentoLineaDescuento();
-                                        descuento.@base = det.valor;
+                                        descuento.@base = (det.valor-subsidioFECF);
                                         descuento.valor = ajuste * -1;
-                                        descuento.porcentaje = Math.Round(((ajuste * -1) / det.valor) * 100, 2);
+                                        descuento.porcentaje = Math.Round(((ajuste * -1) / (det.valor-subsidioFECF)) * 100, 4);
                                         descuento.motivo = "Ajuste";
                                         ldescuentos.Add(descuento);
                                     }
                                     else
                                     {
-                                        cargo = new documentoLineaCargo();
-                                        cargo.@base = det.valor;
-                                        cargo.valor = ajuste;
-                                        cargo.porcentaje = Math.Round((ajuste / det.valor) * 100, 2);
-                                        cargo.motivo = "Ajuste";
-                                        lcargos.Add(cargo);
+                                        if(ajuste>0)
+                                        {
+                                            cargo = new documentoLineaCargo();
+                                            cargo.@base = (det.valor-subsidioFECF);
+                                            cargo.valor = ajuste;
+                                            cargo.porcentaje = Math.Round((ajuste / (det.valor-subsidioFECF)) * 100, 4);
+                                            cargo.motivo = "Ajuste";
+                                            lcargos.Add(cargo);
+                                        }
+                                        
                                     }
                                     cargos.cargo = lcargos.ToArray();
                                     linea.cargos = cargos;
+                                    linea.cargoLinea = lcargos.Sum(x => x.valor);
                                     descuentos.descuento = ldescuentos.ToArray();
                                     linea.descuentoLinea = ldescuentos.Sum(x => x.valor);
-                                    linea.cargoLinea = lcargos.Sum(x => x.valor);
                                     linea.descuentos = descuentos;
                                     linea.unidadesLinea = det.cantidad;
-                                    linea.precioUnidad = det.valor / det.cantidad;
-                                    linea.subtotalLinea = det.valor;
+                                    linea.precioUnidad = (det.valor - subsidioFECF) / det.cantidad;
+                                    linea.subtotalLinea = (det.valor - subsidioFECF);
                                     //llenar la información que se registra en la sección de SPD
                                     producto.totalUnidades = det.cantidad;
                                     producto.unidadMedidaTotal = "MTQ";
-                                    producto.consumoTotal = det.valor + linea.cargoLinea - linea.descuentoLinea;
+                                    producto.consumoTotal = det.valor + linea.cargoLinea - linea.descuentoLinea - subsidioFECF;
                                     producto.unidadesConsumidas = det.cantidad;
                                     producto.unidadMedidaConsumida = "MTQ";
-                                    producto.valorConsumoParcial = det.valor;
-                                    producto.valorUnitario = det.valor / det.cantidad;
+                                    producto.valorConsumoParcial = det.valor - subsidioFECF;
+                                    producto.valorUnitario = (det.valor - subsidioFECF) / det.cantidad;
                                     List<extensionSPDservicioPublicoValorFacturadoProductoDescuento> ldctos = new List<extensionSPDservicioPublicoValorFacturadoProductoDescuento>();
                                     List<extensionSPDservicioPublicoValorFacturadoProductoCargo> lcargofac = new List<extensionSPDservicioPublicoValorFacturadoProductoCargo>();
                                     extensionSPDservicioPublicoValorFacturadoProductoDescuento dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
@@ -264,14 +280,17 @@ namespace WebAppElectronicInvoice.Controllers
                                     }
                                     else
                                     {
-                                        carfact.razonCargo = "Subsidio FSSRI";
-                                        carfact.valorCargo = subsidioFSSRI;
-                                        lcargofac.Add(carfact);
+                                        if(subsidioFSSRI>0)
+                                        {
+                                            carfact.razonCargo = "Subsidio FSSRI";
+                                            carfact.valorCargo = subsidioFSSRI;
+                                            lcargofac.Add(carfact);
+                                        }
                                     }
-                                    dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
-                                    dctos.razonDescuento = "Subsidio FECF";
-                                    dctos.valorDto = subsidioFECF;
-                                    ldctos.Add(dctos);
+                                    //dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
+                                    //dctos.razonDescuento = "Subsidio FECF";
+                                    //dctos.valorDto = subsidioFECF;
+                                    //ldctos.Add(dctos);
                                     if (ajuste < 0)
                                     {
                                         dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
@@ -281,10 +300,13 @@ namespace WebAppElectronicInvoice.Controllers
                                     }
                                     else
                                     {
-                                        carfact = new extensionSPDservicioPublicoValorFacturadoProductoCargo();
-                                        carfact.razonCargo = "Ajuste";
-                                        carfact.valorCargo = ajuste;
-                                        lcargofac.Add(carfact);
+                                        if (ajuste >0)
+                                        {
+                                            carfact = new extensionSPDservicioPublicoValorFacturadoProductoCargo();
+                                            carfact.razonCargo = "Ajuste";
+                                            carfact.valorCargo = ajuste;
+                                            lcargofac.Add(carfact);
+                                        }
                                     }
                                     producto.cargos = lcargofac.ToArray();
                                     producto.descuentos = ldctos.ToArray();
@@ -316,87 +338,93 @@ namespace WebAppElectronicInvoice.Controllers
                                 llecturas.Add(lectura);
                                 producto.lecturaContador = llecturas.ToArray();
                                 lproductos.Add(producto);
-                                subtotal += det.valor;
+                                subtotal += (det.codigo_c == "02") ? (det.valor - subsidioFECF) : det.valor;
                                 linea.totalLinea = linea.subtotalLinea + linea.cargoLinea - linea.descuentoLinea;
                                 totaldoc += linea.totalLinea;
                                 lLineas.Add(linea);
                                 lineas.linea = lLineas.ToArray();
                                 factura.lineas = lineas;
                             }
+                            
                         }
-                        documentodatosTotales totales = new documentodatosTotales();
-                        totales.subtotal = subtotal;
-                        totales.porcDescuentoFinal = 0;
-                        totales.descuentoFinal = 0;// (ajuste < 0) ? subsidioFECF + subsidioFSSRI + (ajuste*-1) : subsidioFECF + subsidioFSSRI;
-                        totales.totalCargos = 0;// (ajuste > 0) ? ajuste : 0;
-                        totales.totalBase = subtotal;
-                        totales.totalImpuestos = 0;
-                        totales.totalGastos = 0;
-                        totales.totalDocumento = totaldoc;
-                        totales.totalRetenciones = 0;
-                        totales.totalAnticipos = 0;
-                        totales.aPagar = totaldoc;
-                        factura.datosTotales = totales;
-                        documentocondicionesPago condicionesPago = new documentocondicionesPago();
-                        documentocondicionPago condicionPago = new documentocondicionPago();
-                        condicionPago.formaPago = "1";
-                        condicionPago.medioPago = "10";
-                        condicionesPago.condicionPago = condicionPago;
-                        factura.condicionesPago = condicionesPago;
-                        documentoExtensionSPD extSPD = new documentoExtensionSPD();
-                        extSPD.referenciaPago = fact.numfact;
-                        extSPD.estratoPredio = Convert.ToInt16(fact.estrato).ToString();
-                        extSPD.tipoUsoPredio = fact.uso;
-                        extensionSPDservicioPublico servicio = new extensionSPDservicioPublico();
-                        servicio.numLinea = "1";
-                        servicio.indTercero = "N";
-                        servicio.servicioFacturado = "GAS";
-                        servicio.empresa = "ENERCER";
-                        servicio.motivo = "Facturación Servicio Público";
-                        servicio.numeroContrato = fact.matricula.ToString();
-                        List<extensionSPDservicioPublicosuscriptor> lsuscriptor = new List<extensionSPDservicioPublicosuscriptor>();
-                        extensionSPDservicioPublicosuscriptor suscriptor = new extensionSPDservicioPublicosuscriptor();
-                        suscriptor.nombre = fact.Nombre_cliente + ' ' + fact.Apellido1_cliente + ' ' + fact.Apellido2_Cliente + ' ' + fact.Razon_social;
-                        suscriptor.direccionPostal = fact.Direccion_cliente;
-                        suscriptor.direccionEntrega = fact.Direccion_cliente;
-                        suscriptor.ciudad = fact.ciudad_cliente;
-                        suscriptor.departamento = fact.departamento_cliente;
-                        suscriptor.pais = "CO";
-                        suscriptor.tipoEstrato = Convert.ToInt16(fact.estrato).ToString();
-                        suscriptor.email = fact.email_cliente;
-                        lsuscriptor.Add(suscriptor);
-                        servicio.subscriptor = lsuscriptor.ToArray();
-                        List<extensionSPDservicioPublicovalorFacturado> lvalfactura = new List<extensionSPDservicioPublicovalorFacturado>();
-                        extensionSPDservicioPublicovalorFacturado valfactura = new extensionSPDservicioPublicovalorFacturado();
-                        valfactura.ciclo = "1";
-                        valfactura.tipoPeriodicidad = "1";
-                        valfactura.producto = lproductos.ToArray();
-                        lvalfactura.Add(valfactura);
-                        servicio.valorFacturado = lvalfactura.ToArray();
-                        List<extensionSPDservicioPublico> lservicios = new List<extensionSPDservicioPublico>();
-                        lservicios.Add(servicio);
-                        extSPD.servicioPublico = lservicios.ToArray();
-                        factura.extensionSPD = extSPD;
-                        try
+                        if(subtotal>0)
                         {
-                            var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
-                            result = GuardarResponse(resultado, factura);
-                            success = true;
+                            documentodatosTotales totales = new documentodatosTotales();
+                            totales.subtotal = subtotal;
+                            totales.porcDescuentoFinal = 0;
+                            totales.descuentoFinal = 0;// (ajuste < 0) ? subsidioFECF + subsidioFSSRI + (ajuste*-1) : subsidioFECF + subsidioFSSRI;
+                            totales.totalCargos = 0;// (ajuste > 0) ? ajuste : 0;
+                            totales.totalBase = subtotal;
+                            totales.totalImpuestos = 0;
+                            totales.totalGastos = 0;
+                            totales.totalDocumento = totaldoc;
+                            totales.totalRetenciones = 0;
+                            totales.totalAnticipos = 0;
+                            totales.aPagar = totaldoc;
+                            factura.datosTotales = totales;
+                            documentocondicionesPago condicionesPago = new documentocondicionesPago();
+                            documentocondicionPago condicionPago = new documentocondicionPago();
+                            condicionPago.formaPago = "1";
+                            condicionPago.medioPago = "10";
+                            condicionesPago.condicionPago = condicionPago;
+                            factura.condicionesPago = condicionesPago;
+                            documentoExtensionSPD extSPD = new documentoExtensionSPD();
+                            extSPD.referenciaPago = fact.numfact;
+                            extSPD.estratoPredio = Convert.ToInt16(fact.estrato).ToString();
+                            extSPD.tipoUsoPredio = fact.uso;
+                            extensionSPDservicioPublico servicio = new extensionSPDservicioPublico();
+                            servicio.numLinea = "1";
+                            servicio.indTercero = "N";
+                            servicio.servicioFacturado = "GAS";
+                            servicio.empresa = "ENERCER";
+                            servicio.motivo = "Facturación Servicio Público";
+                            servicio.numeroContrato = fact.matricula.ToString();
+                            List<extensionSPDservicioPublicosuscriptor> lsuscriptor = new List<extensionSPDservicioPublicosuscriptor>();
+                            extensionSPDservicioPublicosuscriptor suscriptor = new extensionSPDservicioPublicosuscriptor();
+                            suscriptor.nombre = fact.Nombre_cliente + ' ' + fact.Apellido1_cliente + ' ' + fact.Apellido2_Cliente + ' ' + fact.Razon_social;
+                            suscriptor.direccionPostal = fact.Direccion_cliente;
+                            suscriptor.direccionEntrega = fact.Direccion_cliente;
+                            suscriptor.ciudad = fact.ciudad_cliente;
+                            suscriptor.departamento = fact.departamento_cliente;
+                            suscriptor.pais = "CO";
+                            suscriptor.tipoEstrato = Convert.ToInt16(fact.estrato).ToString();
+                            suscriptor.email = fact.email_cliente;
+                            lsuscriptor.Add(suscriptor);
+                            servicio.subscriptor = lsuscriptor.ToArray();
+                            List<extensionSPDservicioPublicovalorFacturado> lvalfactura = new List<extensionSPDservicioPublicovalorFacturado>();
+                            extensionSPDservicioPublicovalorFacturado valfactura = new extensionSPDservicioPublicovalorFacturado();
+                            valfactura.ciclo = "1";
+                            valfactura.tipoPeriodicidad = "1";
+                            valfactura.producto = lproductos.ToArray();
+                            lvalfactura.Add(valfactura);
+                            servicio.valorFacturado = lvalfactura.ToArray();
+                            List<extensionSPDservicioPublico> lservicios = new List<extensionSPDservicioPublico>();
+                            lservicios.Add(servicio);
+                            extSPD.servicioPublico = lservicios.ToArray();
+                            factura.extensionSPD = extSPD;
+                            //CrearPDF(fact, lectura1, ldetalle);
+                            try
+                            {
+                                var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
+                                result = GuardarResponse(resultado, factura);
+                                success = true;
 
+                            }
+                            catch (Exception ex)
+                            {
+                                result = ex.Message;
+                                success = false;
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            result = ex.Message;
-                            success = false;
-                        }
+                        
                     }
                     else
                     {
                         Envio_Factura envio = new Envio_Factura();
-                        envio.Numfactura = fact.numfact;
+                        envio.Numfactura = fact.Prefijo.Trim() + fact.numfact.Trim();
                         envio.Codpredio = codsus;
-                        envio.mensaje_respuesta = "No existe el suscriptor.";
-                        envio.codigo_respuesta = "100";
+                        envio.mensaje_respuesta = "No existe el suscriptor o no tiene la información completa";
+                        envio.codigo_respuesta = "INT";
                         envio.xml_enviado = "";
                         try
                         {
@@ -415,7 +443,7 @@ namespace WebAppElectronicInvoice.Controllers
                 result = "No existe factura";
                 success = true;
             }
-            return Json(new { success = success, message = result },JsonRequestBehavior.AllowGet);
+            return Json(new { success = success, message = result }, JsonRequestBehavior.AllowGet);
         }
 
 
@@ -496,9 +524,9 @@ namespace WebAppElectronicInvoice.Controllers
                     return null;
                 }
             }
-        } 
+        }
 
-        private string ConvertirFecha(string fecha,string horas)
+        private string ConvertirFecha(string fecha, string horas)
         {
             string inputDate = fecha; // Fecha en formato dd/MM/yyyy HH:mm:ss tt
             string outputDate = "";
@@ -511,21 +539,21 @@ namespace WebAppElectronicInvoice.Controllers
                 int minute = Convert.ToDateTime(inputDate).Minute;
                 int second = Convert.ToDateTime(inputDate).Second;
 
-                if(horas=="horas")
+                if (horas == "horas")
                 {
-                    outputDate = year.ToString() + "-" + month.ToString().PadLeft(2, '0') + "-" + day.ToString().PadLeft(2, '0')+" "+hour.ToString().PadLeft(2,'0')+":"+minute.ToString().PadLeft(2,'0')+":"+second.ToString().PadLeft(2,'0');
+                    outputDate = year.ToString() + "-" + month.ToString().PadLeft(2, '0') + "-" + day.ToString().PadLeft(2, '0') + " " + hour.ToString().PadLeft(2, '0') + ":" + minute.ToString().PadLeft(2, '0') + ":" + second.ToString().PadLeft(2, '0');
                 }
                 else
                 {
                     outputDate = year.ToString() + "-" + month.ToString().PadLeft(2, '0') + "-" + day.ToString().PadLeft(2, '0');
                 }
-                
+
             }
             catch (Exception ex)
             {
-                outputDate = "formato no valido: "+ex.Message;
+                outputDate = "formato no valido: " + ex.Message;
             }
-            
+
             return outputDate;
         }
 
@@ -580,6 +608,328 @@ namespace WebAppElectronicInvoice.Controllers
             }
 
             return string.Empty;
+        }
+
+        private string CrearPDF(FacturasT factura, Lectura lecturas, List<FacturasD> detalleF)
+        {
+
+            List<Tarifas> tarifa = new ADTarifas().ConsultarTarifas(factura.ciclo, factura.periodo, factura.anio.ToString(), factura.UsoTarifa, factura.EstratoTarifa);
+            periodosCiclo periodosC = new ADperiodosCiclo().consultarperiodosCiclo(factura.ciclo, factura.periodo, factura.anio.ToString());
+
+            var resFSSRI = detalleF.Where(x => x.codigo_c == "96").FirstOrDefault();
+            decimal subsidioFSSRI = 0;
+            if (resFSSRI != null)
+                subsidioFSSRI = resFSSRI.valor;
+            decimal subsidioFECF = 0;
+            var resFECF = detalleF.Where(x => x.codigo_c == "97").FirstOrDefault();
+            if (resFECF != null)
+                subsidioFECF = resFECF.valor * -1;
+            decimal ajuste = 0;
+            var resAjuste = detalleF.Where(x => x.codigo_c == "29").FirstOrDefault();
+            if (resAjuste != null)
+                ajuste = resAjuste.valor;
+            int consumo_Fact = 0;
+            decimal vrconsumo = 0;
+            var consumoFact = detalleF.Where(x => x.codigo_c == "02").FirstOrDefault();
+            if (consumoFact != null)
+            {
+                consumo_Fact = consumoFact.cantidad;
+                vrconsumo = consumoFact.valor;
+            }
+            decimal cargo_fijo = 0;
+            var cargofijo = detalleF.Where(x => x.codigo_c == "01").FirstOrDefault();
+            if (cargofijo != null)
+                cargo_fijo = cargofijo.valor;
+            decimal subtotalconsumo = cargo_fijo + (vrconsumo - subsidioFECF) - subsidioFSSRI;
+
+            string filePDF = Server.MapPath("~/Facturas/" + factura.Prefijo + factura.numfact + ".pdf");
+            Rectangle pageSize = PageSize.LETTER; // new Rectangle(720f, 1080f);
+            try
+            {
+                PdfWriter pdfWriter = new PdfWriter(filePDF);
+                PdfDocument pdfdoc = new PdfDocument(pdfWriter);
+                Document doc = new Document(pdfdoc, new PageSize(pageSize));
+                doc.SetMargins(14.17f, 28.35f, 14.17f, 28.35f);
+
+                PdfFont boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+                PdfFont normalFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+                Text TituloIzquierda = new Text("Enercer S.A. E.S.P. \nNit: 830.140.206")
+                    .SetFont(boldFont)
+                    .SetFontSize(12);
+                Text TituloDerecha = new Text("Vigilado \nSUPERINTENDENCIA DE SERVICIOS \nPUBLICOS DOMICILIARIOS")
+                    .SetFont(boldFont)
+                    .SetFontSize(8);
+
+                iText.Layout.Element.Table titleTable = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 1, 1 })).UseAllAvailableWidth();
+
+                titleTable.AddCell(new Cell().Add(new Paragraph(TituloIzquierda)).SetBorder(Border.NO_BORDER));
+                titleTable.AddCell(new Cell().Add(new Paragraph(TituloDerecha).SetTextAlignment(TextAlignment.RIGHT)).SetBorder(Border.NO_BORDER));
+
+                doc.Add(titleTable);
+
+                Paragraph TipoDoc = new Paragraph();
+                TipoDoc.SetFont(boldFont)
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.CENTER);
+                TipoDoc.Add("DOCUMENTO EQUIVALENTE A LA FACTURA DE VENTA SPD");
+                doc.Add(TipoDoc);
+                iText.Layout.Element.Table Encabezado = new iText.Layout.Element.Table(3).UseAllAvailableWidth();
+                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Número").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Fecha y Hora").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Periodo").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                Encabezado.AddCell(new Cell().Add(new Paragraph(factura.Prefijo + factura.numfact).SetFontSize(8)));
+                Encabezado.AddCell(new Cell().Add(new Paragraph(factura.fecha.ToString()).SetFontSize(8)));
+                Encabezado.AddCell(new Cell().Add(new Paragraph(periodosC.nomperiodo).SetFontSize(8)));
+                doc.Add(Encabezado);
+                Paragraph DatosCliente = new Paragraph();
+                DatosCliente.SetFont(boldFont)
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.CENTER);
+                DatosCliente.Add("INFORMACIÓN DEL CLIENTE");
+                doc.Add(DatosCliente);
+                iText.Layout.Element.Table tbdatoscliente = new iText.Layout.Element.Table(4).UseAllAvailableWidth();
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Código Suscriptor: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.codpredio).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Codigo de Ruta: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Cliente: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Razon_social.Trim() + " " + factura.Nombre_cliente.Trim() + " " + factura.Apellido1_cliente.Trim() + " " + factura.Apellido2_Cliente.Trim()).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Nit/CC: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Identificacion + " " + factura.dv).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Estrato: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.estrato).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Clase de Uso: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.uso).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Dirección del Servicio: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Direccion_cliente).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Barrio: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Dirección de Correp.: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Ciudad: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.nomciudad).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Medidor: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Nmedidor).SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Tipo de Gas: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("GN").SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+
+                doc.Add(tbdatoscliente);
+                Paragraph Consumo = new Paragraph();
+                Consumo.SetFont(boldFont)
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.CENTER);
+                Consumo.Add("DETERMINACION DEL CONSUMO");
+                doc.Add(Consumo);
+                iText.Layout.Element.Table tbconsumo = new iText.Layout.Element.Table(5).UseAllAvailableWidth();
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Lect. Anterior").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Lect. Actual").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Consumo m3").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Factor Corrección").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Consumo Fact.").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+
+                tbconsumo.AddCell(new Cell().Add(new Paragraph(lecturas.lect_anterior.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddCell(new Cell().Add(new Paragraph(lecturas.lect_actual.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddCell(new Cell().Add(new Paragraph(lecturas.consumo.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].factor_correccion.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddCell(new Cell().Add(new Paragraph(consumo_Fact.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                doc.Add(tbconsumo);
+
+                Paragraph Historico = new Paragraph();
+                Historico.SetFont(boldFont)
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.CENTER);
+                Historico.Add("EVOLUCIÓN DE SU CONSUMO (M3)");
+                doc.Add(Historico);
+                iText.Layout.Element.Table tbhistorico = new iText.Layout.Element.Table(7).UseAllAvailableWidth();
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 6").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 5").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 4").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 3").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 2").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 1").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Promedio").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+
+                tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo6.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo5.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo4.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo3.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo2.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo1.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo_promedio.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+
+                doc.Add(tbhistorico);
+                Paragraph Costos = new Paragraph();
+                Costos.SetFont(boldFont)
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.CENTER);
+                Costos.Add("COSTO DE PRESTACIÓN DEL SERVICIO");
+                doc.Add(Costos);
+                Paragraph aviso = new Paragraph();
+                aviso.SetFont(normalFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.CENTER);
+                aviso.Add("Las tarifas aplicadas estan reguladas por la CREG");
+                doc.Add(aviso);
+                iText.Layout.Element.Table tbTarifas = new iText.Layout.Element.Table(5).UseAllAvailableWidth();
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Gm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Tm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Dv1").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Cm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Sub/Contrib").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].gm.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].tm.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].dv1.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].cm.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].subs_contrib.ToString()+"%").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Poder C.(PC)").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Cons(Kwh)").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Val(Kwh)").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                Cell combinedCell = new Cell(1, 2)
+                    .Add(new Paragraph("Consumo promedio de subsistencia"))
+                    .SetFont(boldFont)
+                    .SetFontSize(8)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbTarifas.AddCell(combinedCell);
+
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].poder_c.ToString()).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph((tarifa[0].estrato=="01")? "Estrato 1: "+tarifa[0].cons_prom_subs.ToString():"Estrato 1: 0.00").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph((tarifa[0].estrato == "02") ? "Estrato 2: " + tarifa[0].cons_prom_subs.ToString() : "Estrato 2: 0.00").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                doc.Add(tbTarifas);
+                Paragraph Liqconsumo = new Paragraph();
+                Liqconsumo.SetFont(boldFont)
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.CENTER);
+                Liqconsumo.Add("LIQUIDACIÓN DEL CONSUMO");
+                doc.Add(Liqconsumo);
+
+                iText.Layout.Element.Table tbliqconsumo = new iText.Layout.Element.Table(6).UseAllAvailableWidth();
+                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Rango").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("ConsM3").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Pleno Mvjm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Neto Mvjm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Mvjm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Total Consumo").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("1").SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(consumo_Fact.ToString()).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].pleno_mvjm.ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].neto_mvjm.ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].mvjm.ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph((vrconsumo-subsidioFECF).ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.RIGHT)));
+
+                Cell liqtextcargofijocombined = new Cell(1, 4)
+                    .Add(new Paragraph("CARGO FIJO MENSUAL"))
+                    .SetFont(boldFont)
+                    .SetFontSize(8)
+                    .SetTextAlignment(TextAlignment.LEFT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextcargofijocombined);
+                Cell liqvrcargofijocombined = new Cell(1, 2)
+                    .Add(new Paragraph(cargo_fijo.ToString("C",culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(8)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrcargofijocombined);
+                Cell liqtextsubsidioFSSRIcombined = new Cell(1, 4)
+                                    .Add(new Paragraph("VALOR SUB / CON FSSRI"))
+                                    .SetFont(boldFont)
+                                    .SetFontSize(8)
+                                    .SetTextAlignment(TextAlignment.LEFT)
+                                    .SetBorderTop(new SolidBorder(0.5f))
+                                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextsubsidioFSSRIcombined);
+                Cell liqvrsubsidioFSSRIcombined = new Cell(1, 2)
+                    .Add(new Paragraph(subsidioFSSRI.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(8)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrsubsidioFSSRIcombined);
+                Cell liqtextsubtotalcombined = new Cell(1, 4)
+                                    .Add(new Paragraph("SUBTOTAL CONSUMO"))
+                                    .SetFont(boldFont)
+                                    .SetFontSize(8)
+                                    .SetTextAlignment(TextAlignment.LEFT)
+                                    .SetBorderTop(new SolidBorder(0.5f))
+                                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextsubtotalcombined);
+                Cell liqvrsubtotalconsumocombined = new Cell(1, 2)
+                    .Add(new Paragraph(subtotalconsumo.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(8)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrsubtotalconsumocombined);
+                Cell liqtextsubsidioFECF = new Cell(1, 4)
+                                   .Add(new Paragraph("INFORMATIVO VR SUBSIDIO (-) FNR MUNICIPIO"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(8)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextsubsidioFECF);
+                Cell liqvrsubsidioFECFcombined = new Cell(1, 2)
+                    .Add(new Paragraph(subsidioFECF.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(8)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrsubsidioFECFcombined);
+                Cell liqtextperiodosatraso = new Cell(1, 4)
+                                   .Add(new Paragraph("PERIODOS DE ATRASO"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(8)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextperiodosatraso);
+                Cell liqperiodosatrasocombined = new Cell(1, 2)
+                    .Add(new Paragraph(factura.atraso.ToString()))
+                    .SetFont(boldFont)
+                    .SetFontSize(8)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqperiodosatrasocombined);
+                Cell TextOtrosconceptos = new Cell(1, 6)
+                                   .Add(new Paragraph("LIQUIDACION OTROS CONCEPTOS"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(8)
+                                   .SetTextAlignment(TextAlignment.CENTER)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(TextOtrosconceptos);
+
+
+                doc.Add(tbliqconsumo);
+
+
+
+                doc.Close();
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("CrearPDF: "+ex.Message,ex);
+            }
+
+            return filePDF;
         }
     }
 }

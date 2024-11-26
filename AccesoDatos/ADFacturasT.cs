@@ -22,27 +22,31 @@ namespace AccesoDatos
             try
             {
                 sqlcon = GetConnIntegrin(ruta);
-                string query = "select ciclo,anio, periodo,numfact,codpredio,valor_tota,fecha,codigobarras,terminal from BdFacturasT where valor_neto<>0";
+                string query = "select ciclo,anio, periodo,numfact,codpredio,valor_neto,fecha,codigobarras,terminal,atraso from BdFacturasT where valor_neto<>0 and terminal is NOT NULL";
                 SQLiteCommand cmd = new SQLiteCommand(query, sqlcon);
                 dr = cmd.ExecuteReader();
                 FacturasT factura = new FacturasT();
                 DateTime fechaant = DateTime.Now;
-                while(dr.Read())
+                string ciclo = "";
+                while (dr.Read())
                 {
-                    fechaant = (!string.IsNullOrEmpty(dr["terminal"].ToString()))? Convert.ToDateTime(dr["fecha"]):fechaant;
-                    string feclim = dr["codigobarras"].ToString().Substring(dr["codigobarras"].ToString().Length-8);
+                    fechaant = (!string.IsNullOrEmpty(dr["terminal"].ToString())) ? Convert.ToDateTime(dr["fecha"]) : fechaant;
+                    string feclim = dr["codigobarras"].ToString().Substring(dr["codigobarras"].ToString().Length - 8);
+                    ciclo = dr["ciclo"].ToString();
                     factura = new FacturasT();
                     factura.ciclo = dr["ciclo"].ToString();
                     factura.anio = Convert.ToInt32(dr["anio"]);
                     factura.periodo = dr["periodo"].ToString();
                     factura.numfact = dr["numfact"].ToString();
                     factura.codpredio = dr["codpredio"].ToString();
-                    factura.valor_total = Convert.ToDecimal(dr["valor_tota"]);
+                    factura.valor_total = Convert.ToDecimal(dr["valor_neto"]);
                     factura.fecha = fechaant;
-                    factura.fecha_limite = Convert.ToDateTime(feclim.Substring(4,4)+'-'+feclim.Substring(2,2)+'-'+feclim.Substring(0,2));
+                    factura.fecha_limite = Convert.ToDateTime(feclim.Substring(4, 4) + '-' + feclim.Substring(2, 2) + '-' + feclim.Substring(0, 2));
+                    factura.atraso = Convert.ToInt16(dr["atraso"]);
                     lfacturas.Add(factura);
                 }
-                reg = InsertarFacturasT(lfacturas);
+                reg += InsertarFacturasT(lfacturas);
+                new ADperiodosCiclo().consultarperiodosCiclo(ciclo, ruta);
             }
             catch (Exception ex)
             {
@@ -75,6 +79,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("valor_total", fact.valor_total);
                     cmd.Parameters.AddWithValue("fecha", fact.fecha);
                     cmd.Parameters.AddWithValue("fecha_limite", fact.fecha_limite);
+                    cmd.Parameters.AddWithValue("atraso", fact.atraso);
                     try
                     {
                         reg += Convert.ToInt32(cmd.ExecuteScalar());
@@ -110,6 +115,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("valor_total", DBNull.Value);
                     cmd.Parameters.AddWithValue("fecha", DBNull.Value);
                     cmd.Parameters.AddWithValue("fecha_limite", DBNull.Value);
+                    cmd.Parameters.AddWithValue("atraso", DBNull.Value);
                     try
                     {
                         FacturasT fact = new FacturasT();
@@ -157,6 +163,9 @@ namespace AccesoDatos
                             fact.nomciudad = dr["nomciudad"].ToString();
                             fact.nomdepto = dr["nomdepto"].ToString();
                             fact.mensaje = dr["mensaje"].ToString();
+                            fact.UsoTarifa = dr["UsoTarifa"].ToString();
+                            fact.EstratoTarifa = dr["EstratoTarifa"].ToString();
+                            fact.atraso = Convert.ToInt16(dr["atraso"]);
                             lfacturas.Add(fact);
                         }
                     }

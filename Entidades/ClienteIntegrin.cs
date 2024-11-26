@@ -47,5 +47,8 @@ namespace Entidades
 
         public List<Responsabilidades> lresponsabilidades { get; set; }
         public List<Tributos> ltributos { get; set; }
+
+        public string UsoTarifa { get; set; }
+        public string EstratoTarifa {  get; set; }
     }
 }

@@ -83,6 +83,7 @@
     <Compile Include="Financia.cs" />
     <Compile Include="Lectura.cs" />
     <Compile Include="MaeDepto.cs" />
+    <Compile Include="periodosCiclo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Responsabilidades.cs" />
     <Compile Include="Tarifas.cs" />

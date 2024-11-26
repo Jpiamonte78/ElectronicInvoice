@@ -86,6 +86,7 @@
     <Compile Include="ADFinancia.cs" />
     <Compile Include="ADLecturas.cs" />
     <Compile Include="ADParametrosGenerales.cs" />
+    <Compile Include="ADperiodosCiclo.cs" />
     <Compile Include="ADTarifas.cs" />
     <Compile Include="ADTipoDocumento.cs" />
     <Compile Include="ConexionBD.cs" />

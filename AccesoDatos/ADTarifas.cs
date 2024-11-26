@@ -18,46 +18,50 @@ namespace AccesoDatos
         {
             int reg = 0;
             List<Tarifas> ltarifas = new List<Tarifas>();
+            string query = "select ciclo,anio,periodo,uso,estrato,valor,valorl,basicol,suplem,extra1,pleac_r,con_bas,acreal,asreal,extral1,asresi,asgra from BdTariGas";
             SQLiteDataReader dr;
             SQLiteConnection sqlcon = new SQLiteConnection();
             try
             {
-                sqlcon = GetConnIntegrin(ruta);
-                string query = "select ciclo,anio,periodo,uso,estrato,valor,valorl,basicol,suplem,extra1,pleac_r,con_bas,acreal,asreal,extral1,asresi,asgra from BdTariGas";
-                SQLiteCommand cmd = new SQLiteCommand(query,sqlcon);
-                dr = cmd.ExecuteReader();
-                Tarifas tari = new Tarifas();
-                while (dr.Read()) {
-                    tari = new Tarifas();
-                    tari.ciclo = dr["ciclo"].ToString();
-                    tari.anio = Convert.ToInt32(dr["anio"]);
-                    tari.periodo = dr["periodo"].ToString();
-                    tari.uso = dr["uso"].ToString();
-                    tari.estrato = dr["estrato"].ToString();
-                    tari.Cargo_fijo = Convert.ToDecimal(dr["valor"],culture);
-                    tari.Consumo = Convert.ToDecimal(dr["valorl"],culture);
-                    tari.mvjm = Convert.ToDecimal(dr["suplem"],culture);
-                    tari.dv1 = Convert.ToDecimal(dr["con_bas"],culture);
-                    tari.cm = Convert.ToDecimal(dr["acreal"], culture);
-                    tari.tm = Convert.ToDecimal(dr["pleac_r"], culture);
-                    tari.gm = Convert.ToDecimal(dr["extra1"], culture);
-                    tari.poder_c = Convert.ToDecimal(dr["extral1"], culture);
-                    tari.pleno_mvjm = Convert.ToDecimal(dr["valorl"], culture) + Convert.ToDecimal(dr["basicol"], culture);
-                    tari.neto_mvjm = Convert.ToDecimal(dr["valorl"], culture);
-                    tari.subs_contrib = Convert.ToDecimal(dr["asreal"], culture);
-                    tari.cons_prom_subs = Convert.ToDecimal(dr["asresi"], culture);
-                    tari.factor_correccion = Convert.ToDecimal(dr["asgra"], culture);
-                    ltarifas.Add(tari);
+                using (sqlcon = GetConnIntegrin(ruta))
+                {
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, sqlcon))
+                    {
+                        using (dr = cmd.ExecuteReader())
+                        {
+                            Tarifas tari = new Tarifas();
+                            while (dr.Read())
+                            {
+                                tari = new Tarifas();
+                                tari.ciclo = dr["ciclo"].ToString();
+                                tari.anio = Convert.ToInt32(dr["anio"]);
+                                tari.periodo = dr["periodo"].ToString();
+                                tari.uso = dr["uso"].ToString();
+                                tari.estrato = dr["estrato"].ToString();
+                                tari.Cargo_fijo = Convert.ToDecimal(dr["valor"], culture);
+                                tari.Consumo = Convert.ToDecimal(dr["valorl"], culture);
+                                tari.mvjm = Convert.ToDecimal(dr["suplem"], culture);
+                                tari.dv1 = Convert.ToDecimal(dr["con_bas"], culture);
+                                tari.cm = Convert.ToDecimal(dr["acreal"], culture);
+                                tari.tm = Convert.ToDecimal(dr["pleac_r"], culture);
+                                tari.gm = Convert.ToDecimal(dr["extra1"], culture);
+                                tari.poder_c = Convert.ToDecimal(dr["extral1"], culture);
+                                tari.pleno_mvjm = Convert.ToDecimal(dr["valorl"], culture) + Convert.ToDecimal(dr["basicol"], culture);
+                                tari.neto_mvjm = Convert.ToDecimal(dr["valorl"], culture);
+                                tari.subs_contrib = Convert.ToDecimal(dr["asreal"], culture);
+                                tari.cons_prom_subs = Convert.ToDecimal(dr["asresi"], culture);
+                                tari.factor_correccion = Convert.ToDecimal(dr["asgra"], culture);
+                                ltarifas.Add(tari);
+                            }
+                            reg = Insertar_tarifas(ltarifas);
+                        }
+                    }
                 }
-                reg = Insertar_tarifas(ltarifas);
             }
             catch (Exception ex)
             {
-                throw new ApplicationException("Consultar_tarifas: "+ex.Message,ex);
-            }
-            finally
-            {
                 sqlcon.Close();
+                throw new ApplicationException("Consultar_tarifas: "+ex.Message,ex);
             }
             return reg;
         }

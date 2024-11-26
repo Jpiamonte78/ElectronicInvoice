@@ -37,14 +37,19 @@ namespace WebAppElectronicInvoice.Controllers
             }
             if(archivo!=null)
             {
+                int cargadosT = 0;
+                int cargadosD = 0;
+                int cargalect = 0;
+                int cargatari = 0;
+                int cargafinan = 0;
                 string NombreDb = Path.GetFileName(archivo.FileName);
                 string rutacompleta = Path.Combine(RutaDb, NombreDb);
                 archivo.SaveAs(rutacompleta);
-                int cargadosT = CargarFacturas(rutacompleta);
-                int cargadosD = CargarDetalles(rutacompleta);
-                int cargalect = CargarLecturas(rutacompleta);
-                int cargatari = CargarTarifas(rutacompleta);
-                int cargafinan = CargarFinanciacion(rutacompleta);
+                cargadosT = CargarFacturas(rutacompleta);
+                cargadosD = CargarDetalles(rutacompleta);
+                cargalect = CargarLecturas(rutacompleta);
+                cargatari = CargarTarifas(rutacompleta);
+                cargafinan = CargarFinanciacion(rutacompleta);
                 if(!IsFileInUse(new FileInfo(rutacompleta)))
                 {
                     System.IO.File.Delete(rutacompleta);
@@ -72,6 +77,8 @@ namespace WebAppElectronicInvoice.Controllers
             }
             return false;
         }
+
+        
 
         private int CargarFacturas(string rutadb)
         {
@@ -143,6 +150,6 @@ namespace WebAppElectronicInvoice.Controllers
             }
             return reg;
         }
-
+        
     }
 }
