@@ -17,5 +17,6 @@ namespace Entidades
         public decimal valor_cu { get; set; }
         public int cuotas { get; set; }
         public int cuotas_pa { get; set; }
+        public string nombre_c { get; set; }
     }
 }

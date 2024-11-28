@@ -23,7 +23,7 @@ namespace AccesoDatos
             SQLiteConnection con = new SQLiteConnection();
             try
             {
-                string query = "select ciclo, anio,periodo,codigo_p,codigo_c,valor_c,valor_cu,cuotas,cuotas_pa from BdFinancia where cuotas_pa>0";
+                string query = "select a.ciclo, a.anio,a.periodo,a.codigo_p,a.codigo_c,b.nombre_c, a.valor_c,a.valor_cu,a.cuotas,a.cuotas_pa from BdFinancia a inner join BdConceptos b on ltrim(rtrim(a.codigo_c))=ltrim(rtrim(b.codigo_c)) where a.cuotas_pa>0";
                 using (con = GetConnIntegrin(ruta))
                 {
                     using (SQLiteCommand cmd = new SQLiteCommand(query, con))
@@ -38,6 +38,7 @@ namespace AccesoDatos
                             financia.periodo = dr["periodo"].ToString();
                             financia.codigo_p = dr["codigo_p"].ToString();
                             financia.codigo_c = dr["codigo_c"].ToString();
+                            financia.nombre_c = dr["nombre_c"].ToString();
                             financia.valor_c = Convert.ToDecimal(dr["valor_c"]);
                             financia.valor_cu = Convert.ToDecimal(dr["valor_cu"]);
                             financia.cuotas = Convert.ToInt16(dr["cuotas"]);
@@ -72,6 +73,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("periodo", finan.periodo);
                     cmd.Parameters.AddWithValue("codigo_p", finan.codigo_p);
                     cmd.Parameters.AddWithValue("codigo_c", finan.codigo_c);
+                    cmd.Parameters.AddWithValue("nombre_c", finan.nombre_c);
                     cmd.Parameters.AddWithValue("valor_c", finan.valor_c);
                     cmd.Parameters.AddWithValue("valor_cu", finan.valor_cu);
                     cmd.Parameters.AddWithValue("cuotas", finan.cuotas);
@@ -105,6 +107,7 @@ namespace AccesoDatos
                     cmd.Parameters.AddWithValue("periodo", DBNull.Value);
                     cmd.Parameters.AddWithValue("codigo_p", codigop);
                     cmd.Parameters.AddWithValue("codigo_c", DBNull.Value);
+                    cmd.Parameters.AddWithValue("nombre_c", DBNull.Value);
                     cmd.Parameters.AddWithValue("valor_c", DBNull.Value);
                     cmd.Parameters.AddWithValue("valor_cu", DBNull.Value);
                     cmd.Parameters.AddWithValue("cuotas", DBNull.Value);
@@ -121,6 +124,7 @@ namespace AccesoDatos
                             finan.periodo = dr["periodo"].ToString();
                             finan.codigo_p = dr["codigo_p"].ToString();
                             finan.codigo_c = dr["codigo_c"].ToString();
+                            finan.nombre_c = dr["nombre_c"].ToString();
                             finan.valor_c = Convert.ToDecimal(dr["valor_c"]);
                             finan.valor_cu = Convert.ToDecimal(dr["valor_cu"]);
                             finan.cuotas = Convert.ToInt16(dr["cuotas"]);

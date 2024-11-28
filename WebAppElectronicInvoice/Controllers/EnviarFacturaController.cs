@@ -402,7 +402,7 @@ namespace WebAppElectronicInvoice.Controllers
                             lservicios.Add(servicio);
                             extSPD.servicioPublico = lservicios.ToArray();
                             factura.extensionSPD = extSPD;
-                            //CrearPDF(fact, lectura1, ldetalle);
+                            CrearPDF(fact, lectura1, ldetalle);
                             try
                             {
                                 var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
@@ -615,7 +615,21 @@ namespace WebAppElectronicInvoice.Controllers
 
             List<Tarifas> tarifa = new ADTarifas().ConsultarTarifas(factura.ciclo, factura.periodo, factura.anio.ToString(), factura.UsoTarifa, factura.EstratoTarifa);
             periodosCiclo periodosC = new ADperiodosCiclo().consultarperiodosCiclo(factura.ciclo, factura.periodo, factura.anio.ToString());
-
+            List<Financia> financiacion = new ADFinancia().Consultar_Financiacion(factura.ciclo, factura.codpredio);
+            
+            string[] conceptos = new string[30];
+            conceptos[0] = "01";
+            conceptos[1] = "02";
+            conceptos[2] = "29";
+            conceptos[3] = "30";
+            conceptos[4] = "16";
+            conceptos[5] = "96";
+            conceptos[6] = "97";
+            conceptos[7] = "12";
+            conceptos[8] = "RX";
+            
+            decimal total_otros = detalleF.Where(x => !conceptos.Contains(x.codigo_c)).Sum(x => x.valor);
+            decimal totalfactura = detalleF.Sum(x => x.valor);
             var resFSSRI = detalleF.Where(x => x.codigo_c == "96").FirstOrDefault();
             decimal subsidioFSSRI = 0;
             if (resFSSRI != null)
@@ -655,7 +669,7 @@ namespace WebAppElectronicInvoice.Controllers
                 PdfFont normalFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 Text TituloIzquierda = new Text("Enercer S.A. E.S.P. \nNit: 830.140.206")
                     .SetFont(boldFont)
-                    .SetFontSize(12);
+                    .SetFontSize(8);
                 Text TituloDerecha = new Text("Vigilado \nSUPERINTENDENCIA DE SERVICIOS \nPUBLICOS DOMICILIARIOS")
                     .SetFont(boldFont)
                     .SetFontSize(8);
@@ -669,68 +683,68 @@ namespace WebAppElectronicInvoice.Controllers
 
                 Paragraph TipoDoc = new Paragraph();
                 TipoDoc.SetFont(boldFont)
-                    .SetFontSize(10)
+                    .SetFontSize(8)
                     .SetTextAlignment(TextAlignment.CENTER);
                 TipoDoc.Add("DOCUMENTO EQUIVALENTE A LA FACTURA DE VENTA SPD");
                 doc.Add(TipoDoc);
                 iText.Layout.Element.Table Encabezado = new iText.Layout.Element.Table(3).UseAllAvailableWidth();
-                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Número").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Fecha y Hora").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Periodo").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                Encabezado.AddCell(new Cell().Add(new Paragraph(factura.Prefijo + factura.numfact).SetFontSize(8)));
-                Encabezado.AddCell(new Cell().Add(new Paragraph(factura.fecha.ToString()).SetFontSize(8)));
-                Encabezado.AddCell(new Cell().Add(new Paragraph(periodosC.nomperiodo).SetFontSize(8)));
+                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Número").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Fecha y Hora").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                Encabezado.AddHeaderCell(new Cell().Add(new Paragraph("Periodo").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                Encabezado.AddCell(new Cell().Add(new Paragraph(factura.Prefijo + factura.numfact).SetFontSize(6)));
+                Encabezado.AddCell(new Cell().Add(new Paragraph(factura.fecha.ToString()).SetFontSize(6)));
+                Encabezado.AddCell(new Cell().Add(new Paragraph(periodosC.nomperiodo).SetFontSize(6)));
                 doc.Add(Encabezado);
                 Paragraph DatosCliente = new Paragraph();
                 DatosCliente.SetFont(boldFont)
-                    .SetFontSize(10)
+                    .SetFontSize(8)
                     .SetTextAlignment(TextAlignment.CENTER);
                 DatosCliente.Add("INFORMACIÓN DEL CLIENTE");
                 doc.Add(DatosCliente);
                 iText.Layout.Element.Table tbdatoscliente = new iText.Layout.Element.Table(4).UseAllAvailableWidth();
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Código Suscriptor: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.codpredio).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Codigo de Ruta: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Código Suscriptor: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.codpredio).SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Codigo de Ruta: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
 
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Cliente: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Razon_social.Trim() + " " + factura.Nombre_cliente.Trim() + " " + factura.Apellido1_cliente.Trim() + " " + factura.Apellido2_Cliente.Trim()).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Nit/CC: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Identificacion + " " + factura.dv).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Cliente: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Razon_social.Trim() + " " + factura.Nombre_cliente.Trim() + " " + factura.Apellido1_cliente.Trim() + " " + factura.Apellido2_Cliente.Trim()).SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Nit/CC: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Identificacion + " " + factura.dv).SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
 
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Estrato: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.estrato).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Clase de Uso: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.uso).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Estrato: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.estrato).SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Clase de Uso: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.uso).SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
 
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Dirección del Servicio: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Direccion_cliente).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Barrio: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Dirección del Servicio: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Direccion_cliente).SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Barrio: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
 
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Dirección de Correp.: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Ciudad: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.nomciudad).SetFontSize(8)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Dirección de Correp.: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Ciudad: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.nomciudad).SetFontSize(6)).SetBorderTop(new SolidBorder(1)));
 
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Medidor: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Nmedidor).SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Tipo de Gas: ").SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
-                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("GN").SetFontSize(8)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Medidor: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph(factura.Nmedidor).SetFontSize(6)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("Tipo de Gas: ").SetFontSize(6)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
+                tbdatoscliente.AddCell(new Cell().Add(new Paragraph("GN").SetFontSize(6)).SetBorderTop(new SolidBorder(1)).SetBorderBottom(new SolidBorder(1)));
 
                 doc.Add(tbdatoscliente);
                 Paragraph Consumo = new Paragraph();
                 Consumo.SetFont(boldFont)
-                    .SetFontSize(10)
+                    .SetFontSize(8)
                     .SetTextAlignment(TextAlignment.CENTER);
                 Consumo.Add("DETERMINACION DEL CONSUMO");
                 doc.Add(Consumo);
                 iText.Layout.Element.Table tbconsumo = new iText.Layout.Element.Table(5).UseAllAvailableWidth();
-                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Lect. Anterior").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Lect. Actual").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Consumo m3").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Factor Corrección").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Consumo Fact.").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Lect. Anterior").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Lect. Actual").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Consumo m3").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Factor Corrección").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Consumo Fact.").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
 
                 tbconsumo.AddCell(new Cell().Add(new Paragraph(lecturas.lect_anterior.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
                 tbconsumo.AddCell(new Cell().Add(new Paragraph(lecturas.lect_actual.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
@@ -741,18 +755,18 @@ namespace WebAppElectronicInvoice.Controllers
 
                 Paragraph Historico = new Paragraph();
                 Historico.SetFont(boldFont)
-                    .SetFontSize(10)
+                    .SetFontSize(8)
                     .SetTextAlignment(TextAlignment.CENTER);
                 Historico.Add("EVOLUCIÓN DE SU CONSUMO (M3)");
                 doc.Add(Historico);
                 iText.Layout.Element.Table tbhistorico = new iText.Layout.Element.Table(7).UseAllAvailableWidth();
-                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 6").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 5").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 4").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 3").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 2").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 1").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Promedio").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 6").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 5").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 4").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 3").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 2").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Ant - 1").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbhistorico.AddHeaderCell(new Cell().Add(new Paragraph("Promedio").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
 
                 tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo6.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
                 tbhistorico.AddCell(new Cell().Add(new Paragraph(lecturas.consumo5.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
@@ -765,7 +779,7 @@ namespace WebAppElectronicInvoice.Controllers
                 doc.Add(tbhistorico);
                 Paragraph Costos = new Paragraph();
                 Costos.SetFont(boldFont)
-                    .SetFontSize(10)
+                    .SetFontSize(8)
                     .SetTextAlignment(TextAlignment.CENTER);
                 Costos.Add("COSTO DE PRESTACIÓN DEL SERVICIO");
                 doc.Add(Costos);
@@ -776,70 +790,70 @@ namespace WebAppElectronicInvoice.Controllers
                 aviso.Add("Las tarifas aplicadas estan reguladas por la CREG");
                 doc.Add(aviso);
                 iText.Layout.Element.Table tbTarifas = new iText.Layout.Element.Table(5).UseAllAvailableWidth();
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Gm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Tm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Dv1").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Cm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Sub/Contrib").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Gm").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Tm").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Dv1").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Cm").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Sub/Contrib").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
 
-                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].gm.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].tm.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].dv1.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].cm.ToString("C", culture)).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].subs_contrib.ToString()+"%").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].gm.ToString("C", culture)).SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].tm.ToString("C", culture)).SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].dv1.ToString("C", culture)).SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].cm.ToString("C", culture)).SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].subs_contrib.ToString() + "%").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
 
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Poder C.(PC)").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Cons(Kwh)").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("Val(Kwh)").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Poder C.(PC)").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Cons(Kwh)").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("Val(Kwh)").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
                 Cell combinedCell = new Cell(1, 2)
                     .Add(new Paragraph("Consumo promedio de subsistencia"))
                     .SetFont(boldFont)
-                    .SetFontSize(8)
+                    .SetFontSize(6)
                     .SetTextAlignment(TextAlignment.CENTER)
                     .SetBorderTop(new SolidBorder(0.5f))
                     .SetBorderBottom(new SolidBorder(0.5f));
                 tbTarifas.AddCell(combinedCell);
 
-                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].poder_c.ToString()).SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph("").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph((tarifa[0].estrato=="01")? "Estrato 1: "+tarifa[0].cons_prom_subs.ToString():"Estrato 1: 0.00").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbTarifas.AddCell(new Cell().Add(new Paragraph((tarifa[0].estrato == "02") ? "Estrato 2: " + tarifa[0].cons_prom_subs.ToString() : "Estrato 2: 0.00").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph(tarifa[0].poder_c.ToString()).SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph("").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph((tarifa[0].estrato == "01") ? "Estrato 1: " + tarifa[0].cons_prom_subs.ToString() : "Estrato 1: 0.00").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbTarifas.AddCell(new Cell().Add(new Paragraph((tarifa[0].estrato == "02") ? "Estrato 2: " + tarifa[0].cons_prom_subs.ToString() : "Estrato 2: 0.00").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
                 doc.Add(tbTarifas);
                 Paragraph Liqconsumo = new Paragraph();
                 Liqconsumo.SetFont(boldFont)
-                    .SetFontSize(10)
+                    .SetFontSize(8)
                     .SetTextAlignment(TextAlignment.CENTER);
                 Liqconsumo.Add("LIQUIDACIÓN DEL CONSUMO");
                 doc.Add(Liqconsumo);
 
                 iText.Layout.Element.Table tbliqconsumo = new iText.Layout.Element.Table(6).UseAllAvailableWidth();
-                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Rango").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("ConsM3").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Pleno Mvjm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Neto Mvjm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Mvjm").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddHeaderCell(new Cell().Add(new Paragraph("Total Consumo").SetFont(boldFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("Rango").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("ConsM3").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("Pleno Mvjm").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("Neto Mvjm").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("Mvjm").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("Total Consumo").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
 
-                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("1").SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(consumo_Fact.ToString()).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].pleno_mvjm.ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].neto_mvjm.ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].mvjm.ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.CENTER)));
-                tbliqconsumo.AddCell(new Cell().Add(new Paragraph((vrconsumo-subsidioFECF).ToString("C",culture)).SetFont(normalFont).SetFontSize(8).SetTextAlignment(TextAlignment.RIGHT)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph("1").SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(consumo_Fact.ToString()).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].pleno_mvjm.ToString("C", culture)).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].neto_mvjm.ToString("C", culture)).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph(tarifa[0].mvjm.ToString("C", culture)).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbliqconsumo.AddCell(new Cell().Add(new Paragraph((vrconsumo - subsidioFECF).ToString("C", culture)).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.RIGHT)));
 
                 Cell liqtextcargofijocombined = new Cell(1, 4)
                     .Add(new Paragraph("CARGO FIJO MENSUAL"))
                     .SetFont(boldFont)
-                    .SetFontSize(8)
+                    .SetFontSize(6)
                     .SetTextAlignment(TextAlignment.LEFT)
                     .SetBorderTop(new SolidBorder(0.5f))
                     .SetBorderBottom(new SolidBorder(0.5f));
                 tbliqconsumo.AddCell(liqtextcargofijocombined);
                 Cell liqvrcargofijocombined = new Cell(1, 2)
-                    .Add(new Paragraph(cargo_fijo.ToString("C",culture)))
+                    .Add(new Paragraph(cargo_fijo.ToString("C", culture)))
                     .SetFont(boldFont)
-                    .SetFontSize(8)
+                    .SetFontSize(6)
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetBorderTop(new SolidBorder(0.5f))
                     .SetBorderBottom(new SolidBorder(0.5f));
@@ -847,7 +861,7 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell liqtextsubsidioFSSRIcombined = new Cell(1, 4)
                                     .Add(new Paragraph("VALOR SUB / CON FSSRI"))
                                     .SetFont(boldFont)
-                                    .SetFontSize(8)
+                                    .SetFontSize(6)
                                     .SetTextAlignment(TextAlignment.LEFT)
                                     .SetBorderTop(new SolidBorder(0.5f))
                                     .SetBorderBottom(new SolidBorder(0.5f));
@@ -855,7 +869,7 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell liqvrsubsidioFSSRIcombined = new Cell(1, 2)
                     .Add(new Paragraph(subsidioFSSRI.ToString("C", culture)))
                     .SetFont(boldFont)
-                    .SetFontSize(8)
+                    .SetFontSize(6)
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetBorderTop(new SolidBorder(0.5f))
                     .SetBorderBottom(new SolidBorder(0.5f));
@@ -863,7 +877,7 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell liqtextsubtotalcombined = new Cell(1, 4)
                                     .Add(new Paragraph("SUBTOTAL CONSUMO"))
                                     .SetFont(boldFont)
-                                    .SetFontSize(8)
+                                    .SetFontSize(6)
                                     .SetTextAlignment(TextAlignment.LEFT)
                                     .SetBorderTop(new SolidBorder(0.5f))
                                     .SetBorderBottom(new SolidBorder(0.5f));
@@ -871,7 +885,7 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell liqvrsubtotalconsumocombined = new Cell(1, 2)
                     .Add(new Paragraph(subtotalconsumo.ToString("C", culture)))
                     .SetFont(boldFont)
-                    .SetFontSize(8)
+                    .SetFontSize(6)
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetBorderTop(new SolidBorder(0.5f))
                     .SetBorderBottom(new SolidBorder(0.5f));
@@ -879,15 +893,15 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell liqtextsubsidioFECF = new Cell(1, 4)
                                    .Add(new Paragraph("INFORMATIVO VR SUBSIDIO (-) FNR MUNICIPIO"))
                                    .SetFont(boldFont)
-                                   .SetFontSize(8)
+                                   .SetFontSize(6)
                                    .SetTextAlignment(TextAlignment.LEFT)
                                    .SetBorderTop(new SolidBorder(0.5f))
                                    .SetBorderBottom(new SolidBorder(0.5f));
                 tbliqconsumo.AddCell(liqtextsubsidioFECF);
                 Cell liqvrsubsidioFECFcombined = new Cell(1, 2)
-                    .Add(new Paragraph(subsidioFECF.ToString("C", culture)))
+                    .Add(new Paragraph("-" + subsidioFECF.ToString("C", culture)))
                     .SetFont(boldFont)
-                    .SetFontSize(8)
+                    .SetFontSize(6)
                     .SetTextAlignment(TextAlignment.RIGHT)
                     .SetBorderTop(new SolidBorder(0.5f))
                     .SetBorderBottom(new SolidBorder(0.5f));
@@ -895,7 +909,7 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell liqtextperiodosatraso = new Cell(1, 4)
                                    .Add(new Paragraph("PERIODOS DE ATRASO"))
                                    .SetFont(boldFont)
-                                   .SetFontSize(8)
+                                   .SetFontSize(6)
                                    .SetTextAlignment(TextAlignment.LEFT)
                                    .SetBorderTop(new SolidBorder(0.5f))
                                    .SetBorderBottom(new SolidBorder(0.5f));
@@ -903,7 +917,7 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell liqperiodosatrasocombined = new Cell(1, 2)
                     .Add(new Paragraph(factura.atraso.ToString()))
                     .SetFont(boldFont)
-                    .SetFontSize(8)
+                    .SetFontSize(6)
                     .SetTextAlignment(TextAlignment.CENTER)
                     .SetBorderTop(new SolidBorder(0.5f))
                     .SetBorderBottom(new SolidBorder(0.5f));
@@ -911,16 +925,242 @@ namespace WebAppElectronicInvoice.Controllers
                 Cell TextOtrosconceptos = new Cell(1, 6)
                                    .Add(new Paragraph("LIQUIDACION OTROS CONCEPTOS"))
                                    .SetFont(boldFont)
-                                   .SetFontSize(8)
+                                   .SetFontSize(6)
                                    .SetTextAlignment(TextAlignment.CENTER)
                                    .SetBorderTop(new SolidBorder(0.5f))
                                    .SetBorderBottom(new SolidBorder(0.5f));
                 tbliqconsumo.AddCell(TextOtrosconceptos);
+                var resCuotaFinancia = detalleF.Where(x => x.codigo_c == "12").FirstOrDefault();
+                decimal cuotafinancia = 0;
+                if (resCuotaFinancia != null)
+                    cuotafinancia = resCuotaFinancia.valor;
+                Cell liqtextcuotafinancia = new Cell(1, 4)
+                                   .Add(new Paragraph("CUOTA FINANCIACIÓN"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextcuotafinancia);
+                Cell liqcuotafinanciacombined = new Cell(1, 2)
+                    .Add(new Paragraph(cuotafinancia.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqcuotafinanciacombined);
+                var resDeudaAnterior = detalleF.Where(x => x.codigo_c == "30").FirstOrDefault();
+                var resInteresDeuda = detalleF.Where(x => x.codigo_c == "16").FirstOrDefault();
+                decimal deuda = 0;
+                decimal intereses = 0;
+                if (resDeudaAnterior != null)
+                    deuda = resDeudaAnterior.valor;
+                if (resInteresDeuda != null)
+                    intereses = resInteresDeuda.valor;
 
+
+                Cell liqtextdeudaanterior = new Cell(1, 4)
+                                   .Add(new Paragraph("DEUDA ANTERIOR MÁS INTERESES"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextdeudaanterior);
+                Cell liqdeudaanteriorcombined = new Cell(1, 2)
+                    .Add(new Paragraph((deuda+intereses).ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqdeudaanteriorcombined);
+                var resReconexion = detalleF.Where(x => x.codigo_c == "RX").FirstOrDefault();
+                decimal reconexion = 0;
+                if (resReconexion != null)
+                    reconexion = resReconexion.valor;
+
+                Cell liqtextreconexion = new Cell(1, 4)
+                                   .Add(new Paragraph("RECONEXIÓN"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextreconexion);
+                Cell liqreconexioncombined = new Cell(1, 2)
+                    .Add(new Paragraph(reconexion.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqreconexioncombined);
+                decimal anticipos = 0;
+                Cell liqtextanticipos = new Cell(1, 4)
+                                  .Add(new Paragraph("ANTICIPOS"))
+                                  .SetFont(boldFont)
+                                  .SetFontSize(6)
+                                  .SetTextAlignment(TextAlignment.LEFT)
+                                  .SetBorderTop(new SolidBorder(0.5f))
+                                  .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextanticipos);
+                Cell liqanticiposcombined = new Cell(1, 2)
+                    .Add(new Paragraph(anticipos.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqreconexioncombined);
+                
+                Cell liqtextotros = new Cell(1, 4)
+                                  .Add(new Paragraph("OTROS CONCEPTOS"))
+                                  .SetFont(boldFont)
+                                  .SetFontSize(6)
+                                  .SetTextAlignment(TextAlignment.LEFT)
+                                  .SetBorderTop(new SolidBorder(0.5f))
+                                  .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextotros);
+                Cell liqotroscombined = new Cell(1, 2)
+                    .Add(new Paragraph(total_otros.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqotroscombined);
+                Cell TextResumenFactura = new Cell(1, 6)
+                                   .Add(new Paragraph("RESUMEN DE LA FACTURA"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.CENTER)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(TextResumenFactura);
+                Cell liqtextsubtotalconsumo = new Cell(1, 4)
+                                   .Add(new Paragraph("SUBTOTAL CONSUMO"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextsubtotalconsumo);
+                Cell liqvrsubtotalconsumo = new Cell(1, 2)
+                    .Add(new Paragraph(subtotalconsumo.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrsubtotalconsumo);
+
+                decimal subtotalotros = total_otros + anticipos + reconexion + deuda + intereses+ cuotafinancia;
+                Cell liqtextsubtotalotros = new Cell(1, 4)
+                                   .Add(new Paragraph("SUBTOTAL OTROS CONCEPTOS"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextsubtotalotros);
+                Cell liqvrsubtotalotros = new Cell(1, 2)
+                    .Add(new Paragraph(subtotalotros.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrsubtotalotros);
+
+                Cell liqtextajuste= new Cell(1, 4)
+                                   .Add(new Paragraph("AJUSTE A LA DECENA"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextajuste);
+                Cell liqvrajuste = new Cell(1, 2)
+                    .Add(new Paragraph(ajuste.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrajuste);
+
+                Cell liqtextTotalPagar = new Cell(1, 4)
+                                   .Add(new Paragraph("VALOR TOTAL A PAGAR FACTURA"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(7)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextTotalPagar);
+                Cell liqvrtotal = new Cell(1, 2)
+                    .Add(new Paragraph(totalfactura.ToString("C", culture)))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqvrtotal);
+                Cell liqtextfechapago = new Cell(1, 4)
+                                   .Add(new Paragraph("PAGO OPORTUNO ANTES DE:"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(7)
+                                   .SetTextAlignment(TextAlignment.LEFT)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqtextfechapago);
+                Cell liqpagooportuno = new Cell(1, 2)
+                    .Add(new Paragraph(factura.fecha_limite.ToShortDateString()))
+                    .SetFont(boldFont)
+                    .SetFontSize(6)
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetBorderTop(new SolidBorder(0.5f))
+                    .SetBorderBottom(new SolidBorder(0.5f));
+                tbliqconsumo.AddCell(liqpagooportuno);
 
                 doc.Add(tbliqconsumo);
+                iText.Layout.Element.Table tbfinanciacion = new iText.Layout.Element.Table(5).UseAllAvailableWidth();
 
+                Cell TextFinanciacion = new Cell(1, 5)
+                                   .Add(new Paragraph("FINANCIACIONES"))
+                                   .SetFont(boldFont)
+                                   .SetFontSize(6)
+                                   .SetTextAlignment(TextAlignment.CENTER)
+                                   .SetBorderTop(new SolidBorder(0.5f))
+                                   .SetBorderBottom(new SolidBorder(0.5f));
+                tbfinanciacion.AddCell(TextFinanciacion);
+                tbfinanciacion.AddCell(new Cell().Add(new Paragraph("CONCEPTO").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbfinanciacion.AddCell(new Cell().Add(new Paragraph("CUOTA").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbfinanciacion.AddCell(new Cell().Add(new Paragraph("VALOR CUOTA").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbfinanciacion.AddCell(new Cell().Add(new Paragraph("VAL. FINANC.").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbfinanciacion.AddCell(new Cell().Add(new Paragraph("SALDO").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
 
+                if(financiacion.Any())
+                {
+                    foreach(Financia fin in financiacion)
+                    {
+                        decimal saldo = 0;
+                        saldo = (fin.cuotas - fin.cuotas_pa) * fin.valor_cu;
+                        tbfinanciacion.AddCell(new Cell().Add(new Paragraph(fin.nombre_c).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.LEFT)));
+                        tbfinanciacion.AddCell(new Cell().Add(new Paragraph($"{fin.cuotas_pa.ToString()} / {fin.cuotas}").SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                        tbfinanciacion.AddCell(new Cell().Add(new Paragraph(fin.valor_cu.ToString("C", culture)).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.RIGHT)));
+                        tbfinanciacion.AddCell(new Cell().Add(new Paragraph(fin.valor_c.ToString("C", culture)).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.RIGHT)));
+                        tbfinanciacion.AddCell(new Cell().Add(new Paragraph(saldo.ToString("C", culture)).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.RIGHT)));
+                    }
+                }
+
+                doc.Add(tbfinanciacion);
+                iText.Layout.Element.Table tbObservacion = new iText.Layout.Element.Table(1).UseAllAvailableWidth();
+                tbObservacion.AddHeaderCell(new Cell().Add(new Paragraph("OBSERVACIONES").SetFont(boldFont).SetFontSize(6).SetTextAlignment(TextAlignment.CENTER)));
+                tbObservacion.AddCell(new Cell().Add(new Paragraph(periodosC.observaciones+". "+periodosC.notificaciones).SetFont(normalFont).SetFontSize(6).SetTextAlignment(TextAlignment.JUSTIFIED)));
+
+                doc.Add(tbObservacion);
 
                 doc.Close();
             }

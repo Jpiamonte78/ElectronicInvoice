@@ -27,11 +27,21 @@ namespace AccesoDatos
                 dr = cmd.ExecuteReader();
                 FacturasT factura = new FacturasT();
                 DateTime fechaant = DateTime.Now;
+                string feclimant = "";
+                string feclim = "";
                 string ciclo = "";
                 while (dr.Read())
                 {
                     fechaant = (!string.IsNullOrEmpty(dr["terminal"].ToString())) ? Convert.ToDateTime(dr["fecha"]) : fechaant;
-                    string feclim = dr["codigobarras"].ToString().Substring(dr["codigobarras"].ToString().Length - 8);
+                    if (dr["codigobarras"].ToString().Contains("(") && dr["codigobarras"].ToString().Length > 25)
+                    {
+                        feclimant = dr["codigobarras"].ToString().Substring(dr["codigobarras"].ToString().Length - 8);
+                        feclim = dr["codigobarras"].ToString().Substring(dr["codigobarras"].ToString().Length - 8);
+                    }
+                    else
+                    {
+                        feclim = feclimant;
+                    }
                     ciclo = dr["ciclo"].ToString();
                     factura = new FacturasT();
                     factura.ciclo = dr["ciclo"].ToString();
