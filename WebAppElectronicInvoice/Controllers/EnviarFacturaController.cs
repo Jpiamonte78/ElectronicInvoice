@@ -36,6 +36,7 @@ using iText.Layout.Properties;
 using iText.IO.Font.Constants;
 using iText.Kernel.Font;
 using iText.Layout.Borders;
+using System.Security.Cryptography;
 
 namespace WebAppElectronicInvoice.Controllers
 {
@@ -176,6 +177,12 @@ namespace WebAppElectronicInvoice.Controllers
                         var resAjuste = ldetalle.Where(x => x.codigo_c == "29").FirstOrDefault();
                         if (resAjuste != null)
                             ajuste = resAjuste.valor;
+                        decimal deuda = 0;
+                        var resDeuda = ldetalle.Where(x => x.codigo_c == "30").FirstOrDefault();
+                        if (resDeuda != null)
+                        {
+                           deuda = resDeuda.valor;
+                        }
                         decimal subtotal = 0;
                         decimal totaldoc = 0;
                         documentoLineaDescuento descuento = new documentoLineaDescuento();
@@ -347,76 +354,99 @@ namespace WebAppElectronicInvoice.Controllers
                             }
                             
                         }
-                        if(subtotal>0)
-                        {
-                            documentodatosTotales totales = new documentodatosTotales();
-                            totales.subtotal = subtotal;
-                            totales.porcDescuentoFinal = 0;
-                            totales.descuentoFinal = 0;// (ajuste < 0) ? subsidioFECF + subsidioFSSRI + (ajuste*-1) : subsidioFECF + subsidioFSSRI;
-                            totales.totalCargos = 0;// (ajuste > 0) ? ajuste : 0;
-                            totales.totalBase = subtotal;
-                            totales.totalImpuestos = 0;
-                            totales.totalGastos = 0;
-                            totales.totalDocumento = totaldoc;
-                            totales.totalRetenciones = 0;
-                            totales.totalAnticipos = 0;
-                            totales.aPagar = totaldoc;
-                            factura.datosTotales = totales;
-                            documentocondicionesPago condicionesPago = new documentocondicionesPago();
-                            documentocondicionPago condicionPago = new documentocondicionPago();
-                            condicionPago.formaPago = "1";
-                            condicionPago.medioPago = "10";
-                            condicionesPago.condicionPago = condicionPago;
-                            factura.condicionesPago = condicionesPago;
-                            documentoExtensionSPD extSPD = new documentoExtensionSPD();
-                            extSPD.referenciaPago = fact.numfact;
-                            extSPD.estratoPredio = Convert.ToInt16(fact.estrato).ToString();
-                            extSPD.tipoUsoPredio = fact.uso;
-                            extensionSPDservicioPublico servicio = new extensionSPDservicioPublico();
-                            servicio.numLinea = "1";
-                            servicio.indTercero = "N";
-                            servicio.servicioFacturado = "GAS";
-                            servicio.empresa = "ENERCER";
-                            servicio.motivo = "Facturación Servicio Público";
-                            servicio.numeroContrato = fact.matricula.ToString();
-                            List<extensionSPDservicioPublicosuscriptor> lsuscriptor = new List<extensionSPDservicioPublicosuscriptor>();
-                            extensionSPDservicioPublicosuscriptor suscriptor = new extensionSPDservicioPublicosuscriptor();
-                            suscriptor.nombre = fact.Nombre_cliente + ' ' + fact.Apellido1_cliente + ' ' + fact.Apellido2_Cliente + ' ' + fact.Razon_social;
-                            suscriptor.direccionPostal = fact.Direccion_cliente;
-                            suscriptor.direccionEntrega = fact.Direccion_cliente;
-                            suscriptor.ciudad = fact.ciudad_cliente;
-                            suscriptor.departamento = fact.departamento_cliente;
-                            suscriptor.pais = "CO";
-                            suscriptor.tipoEstrato = Convert.ToInt16(fact.estrato).ToString();
-                            suscriptor.email = fact.email_cliente;
-                            lsuscriptor.Add(suscriptor);
-                            servicio.subscriptor = lsuscriptor.ToArray();
-                            List<extensionSPDservicioPublicovalorFacturado> lvalfactura = new List<extensionSPDservicioPublicovalorFacturado>();
-                            extensionSPDservicioPublicovalorFacturado valfactura = new extensionSPDservicioPublicovalorFacturado();
-                            valfactura.ciclo = "1";
-                            valfactura.tipoPeriodicidad = "1";
-                            valfactura.producto = lproductos.ToArray();
-                            lvalfactura.Add(valfactura);
-                            servicio.valorFacturado = lvalfactura.ToArray();
-                            List<extensionSPDservicioPublico> lservicios = new List<extensionSPDservicioPublico>();
-                            lservicios.Add(servicio);
-                            extSPD.servicioPublico = lservicios.ToArray();
-                            factura.extensionSPD = extSPD;
-                            CrearPDF(fact, lectura1, ldetalle);
-                            try
-                            {
-                                var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
-                                result = GuardarResponse(resultado, factura);
-                                success = true;
-
-                            }
-                            catch (Exception ex)
-                            {
-                                result = ex.Message;
-                                success = false;
-                            }
-                        }
                         
+                        if (deuda > 0)
+                        {
+                            decimal tbase = fact.valor_total;
+                            List<documentoLineaCargo> lcargosfact = new List<documentoLineaCargo>();
+                            documentoLineaCargo cargosf = new documentoLineaCargo();
+                            cargosf.@base = tbase;
+                            cargosf.porcentaje = Math.Round((deuda / tbase) * 100, 4);
+                            cargosf.valor = deuda;
+                            cargosf.motivo = "Deuda Anterior";
+                            lcargosfact.Add(cargosf);
+                            documentolineaCargos cargosfact = new documentolineaCargos();
+                            cargosfact.cargo = lcargosfact.ToArray();
+                            factura.cargos = cargosfact;
+                        }
+                        documentodatosTotales totales = new documentodatosTotales();
+                        totales.subtotal = subtotal;
+                        totales.porcDescuentoFinal = 0;
+                        totales.descuentoFinal = 0;// (ajuste < 0) ? subsidioFECF + subsidioFSSRI + (ajuste*-1) : subsidioFECF + subsidioFSSRI;
+                        totales.totalCargos = (deuda > 0) ? deuda : 0;// (ajuste > 0) ? ajuste : 0;
+                        totales.totalBase = subtotal;
+                        totales.totalImpuestos = 0;
+                        totales.totalGastos = 0;
+                        totales.totalDocumento = totaldoc;
+                        totales.totalRetenciones = 0;
+                        totales.totalAnticipos = 0;
+                        totales.aPagar = totaldoc+deuda;
+                        factura.datosTotales = totales;
+                        documentocondicionesPago condicionesPago = new documentocondicionesPago();
+                        documentocondicionPago condicionPago = new documentocondicionPago();
+                        condicionPago.formaPago = "1";
+                        condicionPago.medioPago = "10";
+                        condicionesPago.condicionPago = condicionPago;
+                        factura.condicionesPago = condicionesPago;
+                        documentoExtensionSPD extSPD = new documentoExtensionSPD();
+                        extSPD.referenciaPago = fact.numfact;
+                        extSPD.estratoPredio = Convert.ToInt16(fact.estrato).ToString();
+                        extSPD.tipoUsoPredio = fact.uso;
+                        extensionSPDservicioPublico servicio = new extensionSPDservicioPublico();
+                        servicio.numLinea = "1";
+                        servicio.indTercero = "N";
+                        servicio.servicioFacturado = "GAS";
+                        servicio.empresa = "ENERCER";
+                        servicio.motivo = "Facturación Servicio Público";
+                        servicio.numeroContrato = fact.matricula.ToString();
+                        List<extensionSPDservicioPublicosuscriptor> lsuscriptor = new List<extensionSPDservicioPublicosuscriptor>();
+                        extensionSPDservicioPublicosuscriptor suscriptor = new extensionSPDservicioPublicosuscriptor();
+                        suscriptor.nombre = fact.Nombre_cliente + ' ' + fact.Apellido1_cliente + ' ' + fact.Apellido2_Cliente + ' ' + fact.Razon_social;
+                        suscriptor.direccionPostal = fact.Direccion_cliente;
+                        suscriptor.direccionEntrega = fact.Direccion_cliente;
+                        suscriptor.ciudad = fact.ciudad_cliente;
+                        suscriptor.departamento = fact.departamento_cliente;
+                        suscriptor.pais = "CO";
+                        suscriptor.tipoEstrato = Convert.ToInt16(fact.estrato).ToString();
+                        suscriptor.email = fact.email_cliente;
+                        lsuscriptor.Add(suscriptor);
+                        servicio.subscriptor = lsuscriptor.ToArray();
+                        List<extensionSPDservicioPublicovalorFacturado> lvalfactura = new List<extensionSPDservicioPublicovalorFacturado>();
+                        extensionSPDservicioPublicovalorFacturado valfactura = new extensionSPDservicioPublicovalorFacturado();
+                        valfactura.ciclo = "1";
+                        valfactura.tipoPeriodicidad = "1";
+                        valfactura.producto = lproductos.ToArray();
+                        lvalfactura.Add(valfactura);
+                        servicio.valorFacturado = lvalfactura.ToArray();
+                        List<extensionSPDservicioPublico> lservicios = new List<extensionSPDservicioPublico>();
+                        lservicios.Add(servicio);
+                        extSPD.servicioPublico = lservicios.ToArray();
+                        factura.extensionSPD = extSPD;
+                        string ruta = CrearPDF(fact, lectura1, ldetalle);
+                        byte[] pdfBytes = System.IO.File.ReadAllBytes(ruta);
+                        string facturabase64 = Convert.ToBase64String(pdfBytes);
+                        List<documentoAdjunto> ldocumentosPDF = new List<documentoAdjunto>();
+                        documentoAdjunto documentoPDf = new documentoAdjunto();
+                        documentoPDf.nombreFichero = System.IO.Path.GetFileName(ruta);
+                        documentoPDf.contenidoFichero = facturabase64;
+                        documentoPDf.indPdfPrincipal = "S";
+                        ldocumentosPDF.Add(documentoPDf);
+                        documentosAdjuntos documentoAdjunto = new documentosAdjuntos();
+                        documentoAdjunto.documentoAdjunto = ldocumentosPDF.ToArray();
+                        factura.documentosAdjuntos = documentoAdjunto;
+                        try
+                        {
+                            var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
+                            result = GuardarResponse(resultado, factura);
+                            System.IO.File.Delete(ruta);
+                            success = true;
+
+                        }
+                        catch (Exception ex)
+                        {
+                            result = ex.Message;
+                            success = false;
+                        }
                     }
                     else
                     {

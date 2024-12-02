@@ -67,6 +67,7 @@
     <Compile Include="documentoProveedor.cs" />
     <Compile Include="documentoReferenciado.cs" />
     <Compile Include="documentoRetencion.cs" />
+    <Compile Include="documentosAdjuntos.cs" />
     <Compile Include="Envio_Factura.cs" />
     <Compile Include="extensionSPDservicioPublico.cs" />
     <Compile Include="extensionSPDservicioPublicosuscriptor.cs" />

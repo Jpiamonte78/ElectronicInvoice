@@ -53,7 +53,7 @@ namespace Entidades
         [XmlElement]
         public documentoReferenciado[] documentosReferenciados { get; set; }
         [XmlElement]
-        public documentoAdjunto[] documentosAdjuntos { get; set; }
+        public documentosAdjuntos documentosAdjuntos { get; set; }
         [XmlElement]
         public documentoProveedor proveedor { get; set; }
         [XmlElement]
