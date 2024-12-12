@@ -36,7 +36,9 @@ using iText.Layout.Properties;
 using iText.IO.Font.Constants;
 using iText.Kernel.Font;
 using iText.Layout.Borders;
+using iText.IO.Image;
 using System.Security.Cryptography;
+using Image = iText.Layout.Element.Image;
 
 namespace WebAppElectronicInvoice.Controllers
 {
@@ -49,7 +51,7 @@ namespace WebAppElectronicInvoice.Controllers
         string contraseña = ConfigurationManager.AppSettings["PasswordInvoway"];
         string codsus = "";
         CultureInfo culture = new CultureInfo("es-CO");
-
+        public static List<FacturasT> lfacturas;
         // GET: EnviarFactura
         public ActionResult Index()
         {
@@ -58,7 +60,6 @@ namespace WebAppElectronicInvoice.Controllers
         [HttpGet]
         public ActionResult FacturasPendientes()
         {
-            List<FacturasT> lfacturas = new List<FacturasT>();
             lfacturas = new ADFacturasT().Consultar_Facturas();
             return View(lfacturas);
         }
@@ -72,8 +73,8 @@ namespace WebAppElectronicInvoice.Controllers
             int anio = 0;
             bool success = false;
             // Configura el cliente
-            List<FacturasT> lfacturas = new List<FacturasT>();
-            lfacturas = new ADFacturasT().Consultar_Facturas();
+            if(!lfacturas.Any())
+                lfacturas = new ADFacturasT().Consultar_Facturas();
             List<FacturasD> ldetalle = new List<FacturasD>();
             documento factura = new documento();
             if (lfacturas.Any())
@@ -143,7 +144,7 @@ namespace WebAppElectronicInvoice.Controllers
                         productos[0] = "01";
                         productos[1] = "02";
                         productos[2] = "16";
-                        //productos[3] = "30";
+                        productos[3] = "CG";
                         productos[4] = "76";
                         productos[5] = "RX";
                         productos[6] = "SI";
@@ -352,7 +353,6 @@ namespace WebAppElectronicInvoice.Controllers
                                 lineas.linea = lLineas.ToArray();
                                 factura.lineas = lineas;
                             }
-                            
                         }
                         
                         if (deuda > 0)
@@ -368,6 +368,22 @@ namespace WebAppElectronicInvoice.Controllers
                             documentolineaCargos cargosfact = new documentolineaCargos();
                             cargosfact.cargo = lcargosfact.ToArray();
                             factura.cargos = cargosfact;
+                            if(factura.lineas==null)
+                            {
+                                linea = new documentoLinea();
+                                linea.numLinea = 1;
+                                linea.idEstandarReferencia = "999";
+                                linea.referenciaItem = "02";
+                                linea.descripcionItem = "CONSUMO";
+                                linea.unidadMedida = "MTQ";
+                                linea.unidadesLinea = 0;
+                                linea.precioUnidad = 0;
+                                linea.subtotalLinea = 0;
+                                linea.totalLinea = 0;
+                                lLineas.Add(linea);
+                                lineas.linea = lLineas.ToArray();
+                                factura.lineas = lineas;
+                            }
                         }
                         documentodatosTotales totales = new documentodatosTotales();
                         totales.subtotal = subtotal;
@@ -687,6 +703,7 @@ namespace WebAppElectronicInvoice.Controllers
             decimal subtotalconsumo = cargo_fijo + (vrconsumo - subsidioFECF) - subsidioFSSRI;
 
             string filePDF = Server.MapPath("~/Facturas/" + factura.Prefijo + factura.numfact + ".pdf");
+            string rutaimagen = Server.MapPath("~/Content/images/LogoEnercer.png");
             Rectangle pageSize = PageSize.LETTER; // new Rectangle(720f, 1080f);
             try
             {
@@ -694,6 +711,11 @@ namespace WebAppElectronicInvoice.Controllers
                 PdfDocument pdfdoc = new PdfDocument(pdfWriter);
                 Document doc = new Document(pdfdoc, new PageSize(pageSize));
                 doc.SetMargins(14.17f, 28.35f, 14.17f, 28.35f);
+
+                ImageData imageData = ImageDataFactory.Create(rutaimagen);
+                Image img = new Image(imageData);
+                img.SetHeight(50);
+                img.SetWidth(50);
 
                 PdfFont boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
                 PdfFont normalFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
@@ -704,9 +726,10 @@ namespace WebAppElectronicInvoice.Controllers
                     .SetFont(boldFont)
                     .SetFontSize(8);
 
-                iText.Layout.Element.Table titleTable = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 1, 1 })).UseAllAvailableWidth();
+                iText.Layout.Element.Table titleTable = new iText.Layout.Element.Table(UnitValue.CreatePercentArray(new float[] { 1, 1, 1 })).UseAllAvailableWidth();
 
                 titleTable.AddCell(new Cell().Add(new Paragraph(TituloIzquierda)).SetBorder(Border.NO_BORDER));
+                titleTable.AddCell(new Cell().Add(img).SetBorder(Border.NO_BORDER).SetTextAlignment(TextAlignment.CENTER));
                 titleTable.AddCell(new Cell().Add(new Paragraph(TituloDerecha).SetTextAlignment(TextAlignment.RIGHT)).SetBorder(Border.NO_BORDER));
 
                 doc.Add(titleTable);
