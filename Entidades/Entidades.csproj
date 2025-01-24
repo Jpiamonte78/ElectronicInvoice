@@ -68,7 +68,9 @@
     <Compile Include="documentoReferenciado.cs" />
     <Compile Include="documentoRetencion.cs" />
     <Compile Include="documentosAdjuntos.cs" />
+    <Compile Include="DocumentosReferenciados.cs" />
     <Compile Include="Envio_Factura.cs" />
+    <Compile Include="Envio_Notas.cs" />
     <Compile Include="extensionSPDservicioPublico.cs" />
     <Compile Include="extensionSPDservicioPublicosuscriptor.cs" />
     <Compile Include="extensionSPDservicioPublicovalorFacturado.cs" />
@@ -84,6 +86,8 @@
     <Compile Include="Financia.cs" />
     <Compile Include="Lectura.cs" />
     <Compile Include="MaeDepto.cs" />
+    <Compile Include="NotasD.cs" />
+    <Compile Include="NotasT.cs" />
     <Compile Include="periodosCiclo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Responsabilidades.cs" />

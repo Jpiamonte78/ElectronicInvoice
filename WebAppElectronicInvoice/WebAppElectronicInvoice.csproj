@@ -303,6 +303,7 @@
     <Content Include="Views\Envio_Factura\Envio_Documentos.cshtml" />
     <Content Include="Views\EnviarFactura\FacturasPendientes.cshtml" />
     <Content Include="Views\Cliente\Clienteintegrin.cshtml" />
+    <Content Include="Views\EnviarFactura\NotasPendientes.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

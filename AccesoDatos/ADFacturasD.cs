@@ -23,7 +23,7 @@ namespace AccesoDatos
             try
             {
                 con = GetConnIntegrin(ruta);
-                string query = "select a.ciclo,a.anio,a.periodo,a.numfac,a.codpredio,a.codigo_c,b.nombre_c,a.valor,CASE  WHEN instr(a.cantidad,'/')>0 THEN 1 ELSE a.cantidad end as cantidad from BdFacturasD a inner join BdConceptos b on a.codigo_c=b.codigo_c inner join BdFacturasT c on a.codpredio=c.codpredio and a.numfac=c.numfact where a.valor<>0 and c.terminal is not null";
+                string query = "select a.ciclo,a.anio,a.periodo,a.numfac,a.codpredio,a.codigo_c,b.nombre_c,a.valor,CASE  WHEN instr(a.cantidad,'/')>0 THEN 1 ELSE a.cantidad end as cantidad from BdFacturasD a inner join BdConceptos b on a.codigo_c=b.codigo_c inner join BdFacturasT c on ltrim(rtrim(a.codpredio))=ltrim(rtrim(c.codpredio)) and ltrim(rtrim(a.numfac))=ltrim(rtrim(c.numfact)) where a.valor<>0 and c.terminal is not null order by numfac";
                 SQLiteCommand cmd = new SQLiteCommand(query, con);
                 dr = cmd.ExecuteReader();
                 FacturasD detalle = new FacturasD();
@@ -61,7 +61,7 @@ namespace AccesoDatos
             SqlConnection sqlconn = GetConnDB();
             foreach (FacturasD fact in factintegrin)
             {
-                using (SqlCommand cmd = new SqlCommand("[SpFacturasD]", sqlconn))
+                using (SqlCommand cmd = new SqlCommand("SpFacturasD", sqlconn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("accion", "insertar");

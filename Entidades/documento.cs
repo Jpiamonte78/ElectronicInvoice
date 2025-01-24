@@ -51,7 +51,7 @@ namespace Entidades
         [XmlElement]
         public string fechaFinFacturacion { get; set; }
         [XmlElement]
-        public documentoReferenciado[] documentosReferenciados { get; set; }
+        public DocumentosReferenciados documentosReferenciados { get; set; }
         [XmlElement]
         public documentosAdjuntos documentosAdjuntos { get; set; }
         [XmlElement]

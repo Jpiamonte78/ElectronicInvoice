@@ -81,10 +81,13 @@
   <ItemGroup>
     <Compile Include="ADClienteIntegrin.cs" />
     <Compile Include="ADEnvio_Factura.cs" />
+    <Compile Include="ADEnvio_notas.cs" />
     <Compile Include="ADFacturasD.cs" />
     <Compile Include="ADFacturasT.cs" />
     <Compile Include="ADFinancia.cs" />
     <Compile Include="ADLecturas.cs" />
+    <Compile Include="ADNotasD.cs" />
+    <Compile Include="ADNotasT.cs" />
     <Compile Include="ADParametrosGenerales.cs" />
     <Compile Include="ADperiodosCiclo.cs" />
     <Compile Include="ADTarifas.cs" />
