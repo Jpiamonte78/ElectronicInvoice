@@ -42,7 +42,7 @@ namespace WebAppElectronicInvoice.Controllers
                 int cargalect = 0;
                 int cargatari = 0;
                 int cargafinan = 0;
-                string NombreDb = Path.GetFileName(archivo.FileName);
+                string NombreDb = Path.GetFileNameWithoutExtension(archivo.FileName)+ DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")+ Path.GetExtension(archivo.FileName);
                 string rutacompleta = Path.Combine(RutaDb, NombreDb);
                 archivo.SaveAs(rutacompleta);
                 cargadosT = CargarFacturas(rutacompleta);

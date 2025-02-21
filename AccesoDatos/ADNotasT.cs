@@ -84,6 +84,8 @@ namespace AccesoDatos
                                 nota.fecha_envio = null;
                             nota.NumeroNota = Convert.ToInt32(dr["NumeroNota"]);
                             nota.prefijoNota = dr["prefijoNota"].ToString();
+                            nota.codigo_respuesta = dr["codigo_respuesta"].ToString();
+                            nota.id_Envio_Nota = Convert.ToInt32(dr["id_Envio_Nota"]);
                             lnotas.Add(nota);
                         }
                     }

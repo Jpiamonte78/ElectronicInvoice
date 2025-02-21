@@ -176,6 +176,8 @@ namespace AccesoDatos
                             fact.UsoTarifa = dr["UsoTarifa"].ToString();
                             fact.EstratoTarifa = dr["EstratoTarifa"].ToString();
                             fact.atraso = Convert.ToInt16(dr["atraso"]);
+                            fact.codigo_respuesta = dr["codigo_respuesta"].ToString();
+                            fact.id_Envio_Factura = Convert.ToInt32(dr["id_Envio_Factura"]);
                             lfacturas.Add(fact);
                         }
                     }

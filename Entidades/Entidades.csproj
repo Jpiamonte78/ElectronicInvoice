@@ -71,6 +71,7 @@
     <Compile Include="DocumentosReferenciados.cs" />
     <Compile Include="Envio_Factura.cs" />
     <Compile Include="Envio_Notas.cs" />
+    <Compile Include="EstadoFactura.cs" />
     <Compile Include="extensionSPDservicioPublico.cs" />
     <Compile Include="extensionSPDservicioPublicosuscriptor.cs" />
     <Compile Include="extensionSPDservicioPublicovalorFacturado.cs" />
@@ -84,6 +85,7 @@
     <Compile Include="FacturasD.cs" />
     <Compile Include="FacturasT.cs" />
     <Compile Include="Financia.cs" />
+    <Compile Include="identificadoresFacturas.cs" />
     <Compile Include="Lectura.cs" />
     <Compile Include="MaeDepto.cs" />
     <Compile Include="NotasD.cs" />

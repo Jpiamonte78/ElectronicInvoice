@@ -21,8 +21,10 @@ namespace Entidades
         public string Numfactura { get; set; }
         public DateTime? fecha_envio { get; set; }
         public string mensaje { get; set; }
+        public string codigo_respuesta { get; set; }
         public string prefijoNota { get; set; }
         public int NumeroNota { get; set; }
+        public int id_Envio_Nota { get; set; }
 
     }
 }

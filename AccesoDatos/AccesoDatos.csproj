@@ -93,6 +93,7 @@
     <Compile Include="ADTarifas.cs" />
     <Compile Include="ADTipoDocumento.cs" />
     <Compile Include="ConexionBD.cs" />
+    <Compile Include="ADEstadoFacturaNota.cs" />
     <Compile Include="MaeDepto_MuniAD.cs" />
     <Compile Include="ParametrosGeneralesAD.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

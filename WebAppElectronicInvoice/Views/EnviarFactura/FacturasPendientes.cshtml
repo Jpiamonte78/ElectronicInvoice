@@ -97,6 +97,8 @@
                         alert('Cargue exitoso: ' + response.message);
                     }
                     else {
+                        $('#loading').hide();
+                        $('#btnenviar').prop('disabled', false);
                         alert('Error: ' + response.message);
                     }
                 }

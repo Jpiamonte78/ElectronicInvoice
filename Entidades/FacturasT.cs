@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,6 +22,8 @@ namespace Entidades
         public DateTime fecha_limite { get; set; }
         public string mensaje { get; set; }
         public int atraso { get; set; }
+        public string codigo_respuesta { get; set; }
+        public int id_Envio_Factura { get; set; }
 
 
     }
