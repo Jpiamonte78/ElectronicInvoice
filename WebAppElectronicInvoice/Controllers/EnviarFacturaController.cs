@@ -39,6 +39,7 @@ using iText.Layout.Borders;
 using iText.IO.Image;
 using System.Security.Cryptography;
 using Image = iText.Layout.Element.Image;
+using System.Data.Entity.Core.Metadata.Edm;
 
 namespace WebAppElectronicInvoice.Controllers
 {
@@ -64,7 +65,6 @@ namespace WebAppElectronicInvoice.Controllers
             lfacturas = new ADFacturasT().Consultar_Facturas();
             return View(lfacturas);
         }
-
         [HttpGet]
         public async Task<JsonResult> EnviarFacturas()
         {
@@ -85,22 +85,22 @@ namespace WebAppElectronicInvoice.Controllers
                 documentoProveedor proveedor = new documentoProveedor();
                 proveedor.idProveedor = "830140206-1";
                 documentoCliente docCliente = new documentoCliente();
-                foreach (FacturasT fact in lfacturas)
+                foreach (FacturasT factur in lfacturas)
                 {
 
                     try
                     {
-                        if(fact.codigo_respuesta=="0")
+                        if(factur.codigo_respuesta=="0" || factur.mensaje.Contains("Ya existe un documento"))
                         {
                             identificadoresFacturas = new identificadoresFacturas();
-                            identificadoresFacturas.anyo = fact.fecha.Year;
+                            identificadoresFacturas.anyo = factur.fecha.Year;
                             identificadoresFacturas.idFiscalEmisor = "830140206";
-                            identificadoresFacturas.numeroDocumento = fact.Prefijo + fact.numfact;
+                            identificadoresFacturas.numeroDocumento = factur.Prefijo + factur.numfact;
                             identificadoresFacturas.tipoDocumento = "DE";
                             try
                             {
                                 var resultado = await EnviarConsultaSOAPAsync(url, usuario, contraseña, identificadoresFacturas);
-                                result = GuardarResponseConsultaFactura(resultado, fact);
+                                result = GuardarResponseConsultaFactura(resultado, factur);
                                 //System.IO.File.Delete(ruta);
                                 success = true;
                             }
@@ -112,6 +112,8 @@ namespace WebAppElectronicInvoice.Controllers
                         }
                         else
                         {
+                            FacturasT fact = new FacturasT();
+                            fact = new ADFacturasT().Consultar_Una_Factura(factur.id_factura);
                             ciclo = fact.ciclo;
                             periodo = fact.periodo;
                             anio = fact.anio;
@@ -165,6 +167,7 @@ namespace WebAppElectronicInvoice.Controllers
                                 emails.Add(email);
                                 factura.emailsEnvio = emails.ToArray();
                                 ldetalle = new ADFacturasD().Consultar_Detalle(fact.ciclo, fact.periodo, fact.anio, fact.codpredio);
+                                List<Tarifas> tarifa = new ADTarifas().ConsultarTarifas(fact.ciclo, fact.periodo, fact.anio.ToString(), fact.UsoTarifa, fact.EstratoTarifa);
                                 if (ldetalle.Any() && ldetalle.Sum(x => x.valor) != 0)
                                 {
                                     documentoLinea linea = new documentoLinea();
@@ -222,8 +225,6 @@ namespace WebAppElectronicInvoice.Controllers
                                     ConceptosDeuda[42] = "16";
                                     ConceptosDeuda[43] = "76";
 
-
-
                                     var resFSSRI = ldetalle.Where(x => x.codigo_c == "96").FirstOrDefault();
                                     decimal subsidioFSSRI = 0;
                                     if (resFSSRI != null)
@@ -277,9 +278,9 @@ namespace WebAppElectronicInvoice.Controllers
                                                 if (subsidioFSSRI < 0)
                                                 {
                                                     descuento = new documentoLineaDescuento();
-                                                    descuento.@base = det.valor;
+                                                    descuento.@base = Math.Round((subsidioFSSRI*-1)/(tarifa[0].subs_contrib/100),4);
                                                     descuento.valor = subsidioFSSRI * -1;
-                                                    descuento.porcentaje = Math.Round(((subsidioFSSRI * -1) / det.valor) * 100, 6);
+                                                    descuento.porcentaje = tarifa[0].subs_contrib;   //Math.Round(((subsidioFSSRI * -1) / det.valor) * 100, 4);
                                                     descuento.motivo = "Subsidio FSSRI";
                                                     ldescuentos.Add(descuento);
                                                 }
@@ -288,9 +289,9 @@ namespace WebAppElectronicInvoice.Controllers
                                                     if (subsidioFSSRI > 0)
                                                     {
                                                         cargo = new documentoLineaCargo();
-                                                        cargo.@base = (det.valor - subsidioFECF);
+                                                        cargo.@base = Math.Round(subsidioFSSRI / (tarifa[0].subs_contrib / 100), 4); ;
                                                         cargo.valor = subsidioFSSRI;
-                                                        cargo.porcentaje = Math.Round((subsidioFSSRI / (det.valor - subsidioFECF)) * 100, 6);
+                                                        cargo.porcentaje = tarifa[0].subs_contrib;// Math.Round((subsidioFSSRI / (det.valor - subsidioFECF)) * 100, 4);
                                                         cargo.motivo = "Subsidio FSSRI";
                                                         lcargos.Add(cargo);
                                                     }
@@ -303,17 +304,17 @@ namespace WebAppElectronicInvoice.Controllers
                                                 //descuento.motivo = "Subsidio FECF";
                                                 //ldescuentos.Add(descuento);
                                                 linea.unidadMedida = "MTQ";
-                                                decimal porcentaje = 0;
+                                                //decimal porcentaje = 0;
                                                 if (det.valor - subsidioFECF == 0)
                                                     ajuste = 0;
 
                                                 if (ajuste < 0)
                                                 {
-                                                    porcentaje = Math.Round(((ajuste * -1) / (det.valor - subsidioFECF)) * 100, 6);
+                                                    //porcentaje = Math.Round(((ajuste * -1) / (det.valor - subsidioFECF)) * 100, 6);
                                                     descuento = new documentoLineaDescuento();
-                                                    descuento.@base = (porcentaje == 0) ? ajuste * -1 : (det.valor - subsidioFECF);
+                                                    descuento.@base = ajuste * -1;// (porcentaje == 0) ? ajuste * -1 : (det.valor - subsidioFECF);
                                                     descuento.valor = ajuste * -1;
-                                                    descuento.porcentaje = (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
+                                                    descuento.porcentaje = Convert.ToDecimal(100);// (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
                                                     descuento.motivo = "Ajuste";
                                                     ldescuentos.Add(descuento);
                                                 }
@@ -321,11 +322,11 @@ namespace WebAppElectronicInvoice.Controllers
                                                 {
                                                     if (ajuste > 0)
                                                     {
-                                                        porcentaje = Math.Round((ajuste / (det.valor - subsidioFECF)) * 100, 6);
+                                                        //porcentaje = Math.Round((ajuste / (det.valor - subsidioFECF)) * 100, 6);
                                                         cargo = new documentoLineaCargo();
-                                                        cargo.@base = (porcentaje == 0) ? ajuste : (det.valor - subsidioFECF);
+                                                        cargo.@base = ajuste; // (porcentaje == 0) ? ajuste : (det.valor - subsidioFECF);
                                                         cargo.valor = ajuste;
-                                                        cargo.porcentaje = (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
+                                                        cargo.porcentaje = Convert.ToDecimal(100);// (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
                                                         cargo.motivo = "Ajuste";
                                                         lcargos.Add(cargo);
                                                     }
@@ -414,9 +415,9 @@ namespace WebAppElectronicInvoice.Controllers
                                                         if (ajuste < 0)
                                                         {
                                                             descuento = new documentoLineaDescuento();
-                                                            descuento.@base = (det.valor);
+                                                            descuento.@base = ajuste *-1;// (det.valor);
                                                             descuento.valor = ajuste * -1;
-                                                            descuento.porcentaje = Math.Round(((ajuste * -1) / det.valor) * 100, 6);
+                                                            descuento.porcentaje = Convert.ToDecimal(100);// Math.Round(((ajuste * -1) / det.valor) * 100, 6);
                                                             descuento.motivo = "Ajuste";
                                                             ldescuentos.Add(descuento);
                                                         }
@@ -425,9 +426,9 @@ namespace WebAppElectronicInvoice.Controllers
                                                             if (ajuste > 0)
                                                             {
                                                                 cargo = new documentoLineaCargo();
-                                                                cargo.@base = det.valor;
+                                                                cargo.@base = ajuste;// det.valor;
                                                                 cargo.valor = ajuste;
-                                                                cargo.porcentaje = Math.Round((ajuste / det.valor) * 100, 6);
+                                                                cargo.porcentaje = Convert.ToDecimal(100);//  Math.Round((ajuste / det.valor) * 100, 6);
                                                                 cargo.motivo = "Ajuste";
                                                                 lcargos.Add(cargo);
                                                             }
@@ -436,9 +437,9 @@ namespace WebAppElectronicInvoice.Controllers
                                                         if (subsidioFSSRI < 0)
                                                         {
                                                             descuento = new documentoLineaDescuento();
-                                                            descuento.@base = det.valor;
+                                                            descuento.@base = Math.Round((subsidioFSSRI * -1) / (tarifa[0].subs_contrib/100),4); //det.valor;
                                                             descuento.valor = subsidioFSSRI * -1;
-                                                            descuento.porcentaje = Math.Round(((subsidioFSSRI * -1) / det.valor) * 100, 6);
+                                                            descuento.porcentaje = tarifa[0].subs_contrib;// Math.Round(((subsidioFSSRI * -1) / det.valor) * 100, 4);
                                                             descuento.motivo = "Subsidio FSSRI";
                                                             ldescuentos.Add(descuento);
                                                         }
@@ -447,9 +448,9 @@ namespace WebAppElectronicInvoice.Controllers
                                                             if (subsidioFSSRI > 0)
                                                             {
                                                                 cargo = new documentoLineaCargo();
-                                                                cargo.@base = det.valor;
+                                                                cargo.@base = Math.Round(subsidioFSSRI / (tarifa[0].subs_contrib / 100), 4);// det.valor;
                                                                 cargo.valor = subsidioFSSRI;
-                                                                cargo.porcentaje = Math.Round((subsidioFSSRI / det.valor) * 100, 6);
+                                                                cargo.porcentaje = tarifa[0].subs_contrib; //Math.Round((subsidioFSSRI / det.valor) * 100, 4);
                                                                 cargo.motivo = "Subsidio FSSRI";
                                                                 lcargos.Add(cargo);
                                                             }
@@ -647,7 +648,7 @@ namespace WebAppElectronicInvoice.Controllers
                     catch (Exception ex)
                     {
                         Envio_Factura envio = new Envio_Factura();
-                        envio.Numfactura = fact.Prefijo.Trim() + fact.numfact.Trim();
+                        envio.Numfactura = factur.Prefijo.Trim() + factur.numfact.Trim();
                         envio.Codpredio = codsus;
                         envio.mensaje_respuesta = ex.Message;
                         envio.codigo_respuesta = "INT";
@@ -670,11 +671,9 @@ namespace WebAppElectronicInvoice.Controllers
                 result = "No existe factura";
                 success = true;
             }
-            FacturasPendientes();
+            //FacturasPendientes();
             return Json(new { success = success, message = result }, JsonRequestBehavior.AllowGet);
         }
-
-
         public string SerializarEntidadXML(documento factura)
         {
             var xmlSerializer = new XmlSerializer(typeof(documento));
@@ -723,8 +722,6 @@ namespace WebAppElectronicInvoice.Controllers
             }
         }
 
-
-
         public string ConstruirSoapEnvelope(string xmlContenido)
         {
             return $@"
@@ -770,8 +767,6 @@ namespace WebAppElectronicInvoice.Controllers
                    </soapenv:Body>
                 </soapenv:Envelope>";
         }
-
-
         public async Task<string> EnviarSolicitudSOAPAsync(string url, string usuario, string contrasena, documento factura)
         {
             string xmlcontenido = SerializarEntidadXML(factura);
@@ -896,7 +891,7 @@ namespace WebAppElectronicInvoice.Controllers
             envio.Codpredio = codsus;
             envio.mensaje_respuesta = mensajerespuesta;
             envio.codigo_respuesta = codigorespuesta;
-            envio.xml_enviado = "";
+            envio.xml_enviado = modifiedXml;
             try
             {
                 new ADEnvio_Factura().insertar_respuesta(envio);
@@ -1085,8 +1080,6 @@ namespace WebAppElectronicInvoice.Controllers
             return result;
 
         }
-
-
         private string GuardarResponseNota(string response, documento nota)
         {
             string result = "";
@@ -1110,7 +1103,7 @@ namespace WebAppElectronicInvoice.Controllers
             envio.Codpredio = codsus;
             envio.mensaje_respuesta = mensajerespuesta;
             envio.codigo_respuesta = codigorespuesta;
-            envio.xml_enviado = xmlenviado;
+            envio.xml_enviado = "";
             try
             {
                 new ADEnvio_notas().Insertar_Envio(envio);
@@ -1123,8 +1116,6 @@ namespace WebAppElectronicInvoice.Controllers
             return result;
 
         }
-
-
         static string ExtractXmlContent(string soapResponse)
         {
             int startIndex = soapResponse.IndexOf("<?xml");
@@ -1141,7 +1132,6 @@ namespace WebAppElectronicInvoice.Controllers
 
             return string.Empty;
         }
-
         private string CrearPDF(FacturasT factura, Lectura lecturas, List<FacturasD> detalleF)
         {
 
@@ -1732,533 +1722,587 @@ namespace WebAppElectronicInvoice.Controllers
                 lnotas = new ADNotasT().Consultar_Notas();
             List<NotasD> ldetalle = new List<NotasD>();
             documento factura = new documento();
+            identificadoresFacturas identificadoresFacturas = new identificadoresFacturas();
             if (lnotas.Any())
             {
                 factura = new documento();
                 documentoProveedor proveedor = new documentoProveedor();
                 proveedor.idProveedor = "830140206-1";
                 documentoCliente docCliente = new documentoCliente();
+                
                 foreach (NotasT nota in lnotas)
                 {
                     try
                     {
-                        if (!string.IsNullOrEmpty(nota.Numfactura))
+                        if (nota.codigo_respuesta == "0"  || nota.mensaje.Contains("Ya existe un documento"))
                         {
-                            ciclo = nota.ciclo;
-                            periodo = nota.periodo;
-                            anio = Convert.ToInt16(nota.anio);
-                            Lectura lectura1 = new Lectura();
-                            lectura1 = new ADLecturas().Consultar_lecturas_suscriptor(nota.codpredio, ciclo, periodo, anio);
-                            codsus = nota.codpredio;
-                            docCliente = new documentoCliente();
-                            if (!string.IsNullOrEmpty(nota.Identificacion))
+                            identificadoresFacturas = new identificadoresFacturas();
+                            identificadoresFacturas.anyo = Convert.ToDateTime(nota.fecha_envio).Year;
+                            identificadoresFacturas.idFiscalEmisor = "830140206";
+                            if(nota.valor_mod>0)
                             {
-                                //factura.numeroDocumento = nota.prefijoNota + nota.NumeroNota.ToString();
-                                if (nota.valor_mod > 0)
+                                identificadoresFacturas.numeroDocumento ="D"+nota.prefijo + nota.numfact;
+                                identificadoresFacturas.tipoDocumento = "NDE";
+                            }
+                            else
+                            {
+                                identificadoresFacturas.numeroDocumento = "C" + nota.prefijo + nota.numfact;
+                                identificadoresFacturas.tipoDocumento = "NCE";
+                            }
+
+                            
+                            try
+                            {
+                                var resultado = await EnviarConsultaSOAPAsync(url, usuario, contraseña, identificadoresFacturas);
+                                result = GuardarResponseConsultaNota(resultado, nota);
+                                //System.IO.File.Delete(ruta);
+                                success = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                result = ex.Message;
+                                success = false;
+                            }
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrEmpty(nota.Numfactura))
+                            {
+                                ciclo = nota.ciclo;
+                                periodo = nota.periodo;
+                                anio = Convert.ToInt16(nota.anio);
+                                Lectura lectura1 = new Lectura();
+                                lectura1 = new ADLecturas().Consultar_lecturas_suscriptor(nota.codpredio, ciclo, periodo, anio);
+                                codsus = nota.codpredio;
+                                docCliente = new documentoCliente();
+                                if (!string.IsNullOrEmpty(nota.Identificacion))
                                 {
-                                    factura.numeroDocumento = "D" + nota.prefijo + nota.numfact;
-                                    factura.tipoDocumento = "NDE";
-                                    factura.subtipoDocumento = "93";
-                                    factura.motivoRect = "3";
-                                }
-                                else
-                                {
-                                    factura.numeroDocumento = "C" + nota.prefijo + nota.numfact;
-                                    factura.tipoDocumento = "NCE";
-                                    factura.subtipoDocumento = "94";
-                                    factura.motivoRect = "1";
-                                }
-                                factura.tipoOperacion = "60"; //Facturación en Sitio
-                                factura.divisa = "COP";
-                                factura.fechaDocumento = ConvertirFecha(DateTime.Now.ToString(), "horas"); //ConvertirFecha(fact.fecha.ToString());
-                                factura.unidadOrganizativa = "DEFAULT";
-                                factura.fechaVencimiento = ConvertirFecha(DateTime.Now.AddDays(15).ToString(), "");
-                                factura.direccionFactura = "Calle 12 No. 10-49";
-                                factura.distritoFactura = "Garagoa";
-                                factura.ciudadFactura = "15299";
-                                factura.departamentoFactura = "15";
-                                factura.codigoPostalFactura = "152860";
-                                factura.paisFactura = "CO";
-
-                                factura.fechaIniFacturacion = nota.fechainiperiodo;
-                                factura.fechaFinFacturacion = nota.fechafinperiodo;
-                                factura.proveedor = proveedor;
-                                if (!string.IsNullOrEmpty(nota.dv.ToString().Trim()))
-                                    docCliente.idCliente = nota.Identificacion.ToString() + "-" + nota.dv.ToString();
-                                else
-                                    docCliente.idCliente = nota.Identificacion.ToString();
-                                docCliente.tipoDocumentoIdCliente = nota.tipo_identificacion.ToString();
-                                docCliente.razonSocialCliente = nota.Razon_social;
-                                docCliente.nombreCliente = nota.Nombre_cliente;
-                                docCliente.apellido1Cliente = nota.Apellido1_cliente;
-                                docCliente.apellido2Cliente = nota.Apellido2_Cliente;
-                                docCliente.tipoPersonaCliente = nota.tipo_persona.ToString();
-                                docCliente.direccionCliente = nota.Direccion_cliente;
-                                docCliente.distritoCliente = nota.nomciudad;
-                                docCliente.ciudadCliente = nota.ciudad_cliente;
-                                docCliente.departamentoCliente = nota.departamento_cliente;
-                                docCliente.codigoPostalCliente = nota.zona_postal;
-                                docCliente.paisCliente = "CO";
-                                docCliente.telefonoCliente = nota.telefono_cliente;
-                                docCliente.emailCliente = nota.email_cliente;
-                                docCliente.responsabilidadesRutCliente = nota.resp_rut;
-                                docCliente.tributosCliente = nota.tributos;
-                                factura.cliente = docCliente;
-                                List<documentoemailsEnvio> emails = new List<documentoemailsEnvio>();
-                                documentoemailsEnvio email = new documentoemailsEnvio();
-                                email.email = nota.email_cliente;
-                                emails.Add(email);
-                                factura.emailsEnvio = emails.ToArray();
-                                List<documentoReferenciado> ldocumentosref = new List<documentoReferenciado>();
-                                documentoReferenciado documentoreferenciado = new documentoReferenciado();
-                                documentoreferenciado.numDocumentoRef = nota.Numfactura;
-                                documentoreferenciado.fechaDocumentoRef = (nota.fecha_envio != null) ? ConvertirFecha(nota.fecha_envio.ToString(), "") : "";
-                                ldocumentosref.Add(documentoreferenciado);
-                                DocumentosReferenciados documentosReferenciado = new DocumentosReferenciados();
-                                documentosReferenciado.documentoReferenciado = ldocumentosref.ToArray();
-                                factura.documentosReferenciados = documentosReferenciado;
-                                ldetalle = new ADNotasD().Consultar_Detalle(nota.ciclo, nota.periodo, nota.anio, nota.codpredio, nota.numfact);
-                                if (ldetalle.Any() && ldetalle.Sum(x => x.valor) != 0)
-                                {
-                                    documentoLinea linea = new documentoLinea();
-                                    uint i = 0;
-                                    string[] productos = new string[30];
-                                    productos[0] = "01";
-                                    productos[1] = "02";
-                                    productos[2] = "RX";
-                                    productos[3] = "A2";
-
-
-                                    string[] ConceptosDeuda = new string[48];
-                                    ConceptosDeuda[0] = "CA";
-                                    ConceptosDeuda[1] = "CG";
-                                    ConceptosDeuda[2] = "CI";
-                                    ConceptosDeuda[3] = "CM";
-                                    ConceptosDeuda[4] = "CR";
-                                    ConceptosDeuda[5] = "CU";
-                                    ConceptosDeuda[6] = "CV";
-                                    ConceptosDeuda[7] = "DA";
-                                    ConceptosDeuda[8] = "DC";
-                                    ConceptosDeuda[9] = "DE";
-                                    ConceptosDeuda[10] = "DM";
-                                    ConceptosDeuda[11] = "IC";
-                                    ConceptosDeuda[12] = "ID";
-                                    ConceptosDeuda[13] = "IR";
-                                    ConceptosDeuda[14] = "IS";
-                                    ConceptosDeuda[15] = "IV";
-                                    ConceptosDeuda[16] = "MA";
-                                    ConceptosDeuda[17] = "MC";
-                                    ConceptosDeuda[18] = "MH";
-                                    ConceptosDeuda[19] = "MI";
-                                    ConceptosDeuda[20] = "MM";
-                                    ConceptosDeuda[21] = "MO";
-                                    ConceptosDeuda[22] = "MP";
-                                    ConceptosDeuda[23] = "MR";
-                                    ConceptosDeuda[24] = "PA";
-                                    ConceptosDeuda[25] = "PD";
-                                    ConceptosDeuda[26] = "PE";
-                                    ConceptosDeuda[27] = "PH";
-                                    ConceptosDeuda[28] = "PT";
-                                    ConceptosDeuda[29] = "RC";
-                                    ConceptosDeuda[30] = "RE";
-                                    ConceptosDeuda[31] = "REP";
-                                    ConceptosDeuda[32] = "RG";
-                                    ConceptosDeuda[33] = "RH";
-                                    ConceptosDeuda[34] = "RI";
-                                    ConceptosDeuda[35] = "RP";
-                                    ConceptosDeuda[36] = "RQ";
-                                    ConceptosDeuda[37] = "SI";
-                                    ConceptosDeuda[38] = "TC";
-                                    ConceptosDeuda[39] = "TP";
-                                    ConceptosDeuda[40] = "VA";
-                                    ConceptosDeuda[41] = "VT";
-                                    ConceptosDeuda[42] = "16";
-                                    ConceptosDeuda[43] = "76";
-
-
-
-                                    var resFSSRI = ldetalle.Where(x => x.codigo_c == "96").FirstOrDefault();
-                                    decimal subsidioFSSRI = 0;
-                                    if (resFSSRI != null)
-                                        subsidioFSSRI =(resFSSRI.valor>0)?resFSSRI.valor*-1:resFSSRI.valor;
-                                    decimal subsidioFECF = 0;
-                                    var resFECF = ldetalle.Where(x => x.codigo_c == "97").FirstOrDefault();
-                                    if (resFECF != null)
-                                        subsidioFECF = (resFECF.valor>0)?resFECF.valor:resFECF.valor * -1;
-                                    decimal ajuste = 0;
-                                    var resAjuste = ldetalle.Where(x => x.codigo_c == "29").FirstOrDefault();
-                                    if (resAjuste != null)
-                                        ajuste = (resAjuste.valor > 0)? resAjuste.valor*-1:resAjuste.valor;
-                                    decimal deuda = 0;
-                                    var resDeuda = ldetalle.Where(x => x.codigo_c == "30").FirstOrDefault();
-                                    if (resDeuda != null)
+                                    //factura.numeroDocumento = nota.prefijoNota + nota.NumeroNota.ToString();
+                                    if (nota.valor_mod > 0)
                                     {
-                                        deuda = (resDeuda.valor > 0) ? resDeuda.valor : resDeuda.valor * -1;
+                                        factura.numeroDocumento = "D" + nota.prefijo + nota.numfact;
+                                        factura.tipoDocumento = "NDE";
+                                        factura.subtipoDocumento = "93";
+                                        factura.motivoRect = "5";
                                     }
-                                    var resConsumo = ldetalle.Where(x => x.codigo_c == "02").FirstOrDefault();
-                                    var resCargoF = ldetalle.Where(x => x.codigo_c == "01").FirstOrDefault();
-
-                                    decimal subtotal = 0;
-                                    decimal totaldoc = Convert.ToDecimal(0.00);
-                                    documentoLineaDescuento descuento = new documentoLineaDescuento();
-                                    documentoLineaCargo cargo = new documentoLineaCargo();
-                                    documentoLineas lineas = new documentoLineas();
-                                    documentolineaDescuentos descuentos = new documentolineaDescuentos();
-                                    documentolineaCargos cargos = new documentolineaCargos();
-                                    List<documentoLineaDescuento> ldescuentos = new List<documentoLineaDescuento>();
-                                    List<documentoLineaCargo> lcargos = new List<documentoLineaCargo>();
-                                    List<documentoLinea> lLineas = new List<documentoLinea>();
-                                    List<extensionSPDservicioPublicoValorFacturadoproducto> lproductos = new List<extensionSPDservicioPublicoValorFacturadoproducto>();
-                                    extensionSPDservicioPublicoValorFacturadoproducto producto = new extensionSPDservicioPublicoValorFacturadoproducto();
-                                    //se define la estructura para los cargos de la factura
-                                    decimal tbase = (nota.valor_mod > 0) ? nota.valor_mod : nota.valor_mod * -1;
-                                    List<documentoLineaCargo> lcargosfact = new List<documentoLineaCargo>();
-                                    documentoLineaCargo cargosf = new documentoLineaCargo();
-                                    List<documentoLineaDescuento> ldescuentosfact = new List<documentoLineaDescuento>();
-                                    documentoLineaDescuento descuentof = new documentoLineaDescuento();
-                                    factura.lineas = null;
-                                    foreach (NotasD det in ldetalle)
+                                    else
                                     {
-                                        //se valida si el valor total de la modificacion es positivo
-                                        //se considera nota debito y los valores se dejan como están
-                                        //pero si es negativo entonces los valores se les cambia el signo para no enviar valores negativos.
-                                        //det.valor = (nota.valor_mod > 0) ? det.valor : det.valor * -1;
-                                        if (productos.Contains(det.codigo_c))
+                                        factura.numeroDocumento = "C" + nota.prefijo + nota.numfact;
+                                        factura.tipoDocumento = "NCE";
+                                        factura.subtipoDocumento = "94";
+                                        factura.motivoRect = "1";
+                                    }
+                                    factura.tipoOperacion = "60"; //Facturación en Sitio
+                                    factura.divisa = "COP";
+                                    factura.fechaDocumento = ConvertirFecha(DateTime.Now.ToString(), "horas"); //ConvertirFecha(fact.fecha.ToString());
+                                    factura.unidadOrganizativa = "DEFAULT";
+                                    factura.fechaVencimiento = ConvertirFecha(DateTime.Now.AddDays(15).ToString(), "");
+                                    factura.direccionFactura = "Calle 12 No. 10-49";
+                                    factura.distritoFactura = "Garagoa";
+                                    factura.ciudadFactura = "15299";
+                                    factura.departamentoFactura = "15";
+                                    factura.codigoPostalFactura = "152860";
+                                    factura.paisFactura = "CO";
+
+                                    factura.fechaIniFacturacion = nota.fechainiperiodo;
+                                    factura.fechaFinFacturacion = nota.fechafinperiodo;
+                                    factura.proveedor = proveedor;
+                                    if (!string.IsNullOrEmpty(nota.dv.ToString().Trim()))
+                                        docCliente.idCliente = nota.Identificacion.ToString() + "-" + nota.dv.ToString();
+                                    else
+                                        docCliente.idCliente = nota.Identificacion.ToString();
+                                    docCliente.tipoDocumentoIdCliente = nota.tipo_identificacion.ToString();
+                                    docCliente.razonSocialCliente = nota.Razon_social;
+                                    docCliente.nombreCliente = nota.Nombre_cliente;
+                                    docCliente.apellido1Cliente = nota.Apellido1_cliente;
+                                    docCliente.apellido2Cliente = nota.Apellido2_Cliente;
+                                    docCliente.tipoPersonaCliente = nota.tipo_persona.ToString();
+                                    docCliente.direccionCliente = nota.Direccion_cliente;
+                                    docCliente.distritoCliente = nota.nomciudad;
+                                    docCliente.ciudadCliente = nota.ciudad_cliente;
+                                    docCliente.departamentoCliente = nota.departamento_cliente;
+                                    docCliente.codigoPostalCliente = nota.zona_postal;
+                                    docCliente.paisCliente = "CO";
+                                    docCliente.telefonoCliente = nota.telefono_cliente;
+                                    docCliente.emailCliente = nota.email_cliente;
+                                    docCliente.responsabilidadesRutCliente = nota.resp_rut;
+                                    docCliente.tributosCliente = nota.tributos;
+                                    factura.cliente = docCliente;
+                                    List<documentoemailsEnvio> emails = new List<documentoemailsEnvio>();
+                                    documentoemailsEnvio email = new documentoemailsEnvio();
+                                    email.email = nota.email_cliente;
+                                    emails.Add(email);
+                                    factura.emailsEnvio = emails.ToArray();
+                                    List<documentoReferenciado> ldocumentosref = new List<documentoReferenciado>();
+                                    documentoReferenciado documentoreferenciado = new documentoReferenciado();
+                                    documentoreferenciado.numDocumentoRef = nota.Numfactura;
+                                    documentoreferenciado.fechaDocumentoRef = (nota.fecha_envio != null) ? ConvertirFecha(nota.fecha_envio.ToString(), "") : "";
+                                    ldocumentosref.Add(documentoreferenciado);
+                                    DocumentosReferenciados documentosReferenciado = new DocumentosReferenciados();
+                                    documentosReferenciado.documentoReferenciado = ldocumentosref.ToArray();
+                                    factura.documentosReferenciados = documentosReferenciado;
+                                    ldetalle = new ADNotasD().Consultar_Detalle(nota.ciclo, nota.periodo, nota.anio, nota.codpredio, nota.numfact);
+                                    if (ldetalle.Any() && ldetalle.Sum(x => x.valor) != 0)
+                                    {
+                                        documentoLinea linea = new documentoLinea();
+                                        uint i = 0;
+                                        string[] productos = new string[30];
+                                        productos[0] = "01";
+                                        productos[1] = "02";
+                                        productos[2] = "RX";
+                                        productos[3] = "A2";
+
+
+                                        string[] ConceptosDeuda = new string[48];
+                                        ConceptosDeuda[0] = "CA";
+                                        ConceptosDeuda[1] = "CG";
+                                        ConceptosDeuda[2] = "CI";
+                                        ConceptosDeuda[3] = "CM";
+                                        ConceptosDeuda[4] = "CR";
+                                        ConceptosDeuda[5] = "CU";
+                                        ConceptosDeuda[6] = "CV";
+                                        ConceptosDeuda[7] = "DA";
+                                        ConceptosDeuda[8] = "DC";
+                                        ConceptosDeuda[9] = "DE";
+                                        ConceptosDeuda[10] = "DM";
+                                        ConceptosDeuda[11] = "IC";
+                                        ConceptosDeuda[12] = "ID";
+                                        ConceptosDeuda[13] = "IR";
+                                        ConceptosDeuda[14] = "IS";
+                                        ConceptosDeuda[15] = "IV";
+                                        ConceptosDeuda[16] = "MA";
+                                        ConceptosDeuda[17] = "MC";
+                                        ConceptosDeuda[18] = "MH";
+                                        ConceptosDeuda[19] = "MI";
+                                        ConceptosDeuda[20] = "MM";
+                                        ConceptosDeuda[21] = "MO";
+                                        ConceptosDeuda[22] = "MP";
+                                        ConceptosDeuda[23] = "MR";
+                                        ConceptosDeuda[24] = "PA";
+                                        ConceptosDeuda[25] = "PD";
+                                        ConceptosDeuda[26] = "PE";
+                                        ConceptosDeuda[27] = "PH";
+                                        ConceptosDeuda[28] = "PT";
+                                        ConceptosDeuda[29] = "RC";
+                                        ConceptosDeuda[30] = "RE";
+                                        ConceptosDeuda[31] = "REP";
+                                        ConceptosDeuda[32] = "RG";
+                                        ConceptosDeuda[33] = "RH";
+                                        ConceptosDeuda[34] = "RI";
+                                        ConceptosDeuda[35] = "RP";
+                                        ConceptosDeuda[36] = "RQ";
+                                        ConceptosDeuda[37] = "SI";
+                                        ConceptosDeuda[38] = "TC";
+                                        ConceptosDeuda[39] = "TP";
+                                        ConceptosDeuda[40] = "VA";
+                                        ConceptosDeuda[41] = "VT";
+                                        ConceptosDeuda[42] = "16";
+                                        ConceptosDeuda[43] = "76";
+
+
+
+                                        var resFSSRI = ldetalle.Where(x => x.codigo_c == "96").FirstOrDefault();
+                                        decimal subsidioFSSRI = 0;
+                                        if (resFSSRI != null)
+                                            subsidioFSSRI = (resFSSRI.valor > 0) ? resFSSRI.valor * -1 : resFSSRI.valor;
+                                        decimal subsidioFECF = 0;
+                                        var resFECF = ldetalle.Where(x => x.codigo_c == "97").FirstOrDefault();
+                                        if (resFECF != null)
+                                            subsidioFECF = (resFECF.valor > 0) ? resFECF.valor : resFECF.valor * -1;
+                                        decimal ajuste = 0;
+                                        var resAjuste = ldetalle.Where(x => x.codigo_c == "29").FirstOrDefault();
+                                        if (resAjuste != null)
+                                            ajuste = (resAjuste.valor > 0) ? resAjuste.valor * -1 : resAjuste.valor;
+                                        decimal deuda = 0;
+                                        var resDeuda = ldetalle.Where(x => x.codigo_c == "30").FirstOrDefault();
+                                        if (resDeuda != null)
                                         {
-                                            i++;
-                                            linea = new documentoLinea();
-                                            linea.numLinea = i;
-                                            linea.idEstandarReferencia = "999";
-                                            linea.referenciaItem = det.codigo_c;
-                                            linea.descripcionItem = det.nombre_c;
-                                            if (det.codigo_c == "02")
+                                            deuda = (resDeuda.valor > 0) ? resDeuda.valor : resDeuda.valor * -1;
+                                        }
+                                        var resConsumo = ldetalle.Where(x => x.codigo_c == "02").FirstOrDefault();
+                                        var resCargoF = ldetalle.Where(x => x.codigo_c == "01").FirstOrDefault();
+
+                                        decimal subtotal = 0;
+                                        decimal totaldoc = Convert.ToDecimal(0.00);
+                                        documentoLineaDescuento descuento = new documentoLineaDescuento();
+                                        documentoLineaCargo cargo = new documentoLineaCargo();
+                                        documentoLineas lineas = new documentoLineas();
+                                        documentolineaDescuentos descuentos = new documentolineaDescuentos();
+                                        documentolineaCargos cargos = new documentolineaCargos();
+                                        List<documentoLineaDescuento> ldescuentos = new List<documentoLineaDescuento>();
+                                        List<documentoLineaCargo> lcargos = new List<documentoLineaCargo>();
+                                        List<documentoLinea> lLineas = new List<documentoLinea>();
+                                        List<extensionSPDservicioPublicoValorFacturadoproducto> lproductos = new List<extensionSPDservicioPublicoValorFacturadoproducto>();
+                                        extensionSPDservicioPublicoValorFacturadoproducto producto = new extensionSPDservicioPublicoValorFacturadoproducto();
+                                        //se define la estructura para los cargos de la factura
+                                        decimal tbase = (nota.valor_mod > 0) ? nota.valor_mod : nota.valor_mod * -1;
+                                        List<documentoLineaCargo> lcargosfact = new List<documentoLineaCargo>();
+                                        documentoLineaCargo cargosf = new documentoLineaCargo();
+                                        List<documentoLineaDescuento> ldescuentosfact = new List<documentoLineaDescuento>();
+                                        documentoLineaDescuento descuentof = new documentoLineaDescuento();
+                                        factura.lineas = null;
+                                        foreach (NotasD det in ldetalle)
+                                        {
+                                            //se valida si el valor total de la modificacion es positivo
+                                            //se considera nota debito y los valores se dejan como están
+                                            //pero si es negativo entonces los valores se les cambia el signo para no enviar valores negativos.
+                                            //det.valor = (nota.valor_mod > 0) ? det.valor : det.valor * -1;
+                                            if (productos.Contains(det.codigo_c))
                                             {
-                                                if (subsidioFSSRI < 0)
+                                                i++;
+                                                linea = new documentoLinea();
+                                                linea.numLinea = i;
+                                                linea.idEstandarReferencia = "999";
+                                                linea.referenciaItem = det.codigo_c;
+                                                linea.descripcionItem = det.nombre_c;
+                                                if (det.codigo_c == "02")
                                                 {
-                                                    descuento = new documentoLineaDescuento();
-                                                    descuento.@base = (det.valor > 0) ? det.valor : det.valor * -1;
-                                                    descuento.valor =subsidioFSSRI * -1;
-                                                    descuento.porcentaje = Math.Round(((subsidioFSSRI * -1) / ((det.valor > 0) ? det.valor : det.valor * -1)) * 100, 6);
-                                                    descuento.motivo = "Subsidio FSSRI";
-                                                    ldescuentos.Add(descuento);
-                                                }
-                                                else
-                                                {
-                                                    if (subsidioFSSRI > 0)
+                                                    if (subsidioFSSRI < 0)
                                                     {
-                                                        cargo = new documentoLineaCargo();
-                                                        cargo.@base = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
-                                                        cargo.valor = subsidioFSSRI;
-                                                        cargo.porcentaje = Math.Round((subsidioFSSRI / (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF)) * 100, 6);
-                                                        cargo.motivo = "Subsidio FSSRI";
-                                                        lcargos.Add(cargo);
+                                                        descuento = new documentoLineaDescuento();
+                                                        descuento.@base = (det.valor > 0) ? det.valor : det.valor * -1;
+                                                        descuento.valor = subsidioFSSRI * -1;
+                                                        descuento.porcentaje = Math.Round(((subsidioFSSRI * -1) / ((det.valor > 0) ? det.valor : det.valor * -1)) * 100, 6);
+                                                        descuento.motivo = "Subsidio FSSRI";
+                                                        ldescuentos.Add(descuento);
                                                     }
-                                                }
-                                                //se retira el subsidio como descuento porque se está neteando en el consumo.
-                                                //descuento = new documentoLineaDescuento();
-                                                //descuento.@base = det.valor;
-                                                //descuento.valor = subsidioFECF;
-                                                //descuento.porcentaje = Math.Round((subsidioFECF / det.valor) * 100, 2);
-                                                //descuento.motivo = "Subsidio FECF";
-                                                //ldescuentos.Add(descuento);
-                                                linea.unidadMedida = "MTQ";
-                                                decimal porcentaje = 0;
-                                                if (det.valor - subsidioFECF == 0)
-                                                    ajuste = 0;
-                                                if (ajuste < 0)
-                                                {
-                                                    porcentaje = Math.Round(((ajuste * -1) / (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF)) * 100, 6);
-                                                    descuento = new documentoLineaDescuento();
-                                                    descuento.@base = (porcentaje == 0) ? ajuste * -1 : (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
-                                                    descuento.valor = ajuste * -1;
-                                                    descuento.porcentaje = (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
-                                                    descuento.motivo = "Ajuste";
-                                                    ldescuentos.Add(descuento);
-                                                }
-                                                else
-                                                {
-                                                    if (ajuste > 0)
+                                                    else
                                                     {
-                                                        porcentaje = Math.Round((ajuste /    (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF)) * 100, 6);
-                                                        cargo = new documentoLineaCargo();
-                                                        cargo.@base = (porcentaje == 0) ? ajuste : (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
-                                                        cargo.valor = ajuste;
-                                                        cargo.porcentaje = (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
-                                                        cargo.motivo = "Ajuste";
-                                                        lcargos.Add(cargo);
-                                                    }
-
-                                                }
-                                                cargos.cargo = lcargos.ToArray();
-                                                linea.cargos = cargos;
-                                                linea.cargoLinea = lcargos.Sum(x => x.valor);
-                                                descuentos.descuento = ldescuentos.ToArray();
-                                                linea.descuentoLinea = ldescuentos.Sum(x => x.valor);
-                                                linea.descuentos = descuentos;
-                                                linea.unidadesLinea = det.cantidad;
-                                                linea.precioUnidad = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF) / ((det.cantidad > 0) ? det.cantidad : 1);
-                                                linea.subtotalLinea = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
-                                                //llenar la información que se registra en la sección de SPD
-                                                producto.totalUnidades = det.cantidad;
-                                                producto.unidadMedidaTotal = "MTQ";
-                                                producto.consumoTotal = ((det.valor > 0) ? det.valor : det.valor * -1) + linea.cargoLinea - linea.descuentoLinea - subsidioFECF;
-                                                producto.unidadesConsumidas = det.cantidad;
-                                                producto.unidadMedidaConsumida = "MTQ";
-                                                producto.valorConsumoParcial = ((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF;
-                                                producto.valorUnitario = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF) / ((det.cantidad > 0) ? det.cantidad : 1);
-                                                List<extensionSPDservicioPublicoValorFacturadoProductoDescuento> ldctos = new List<extensionSPDservicioPublicoValorFacturadoProductoDescuento>();
-                                                List<extensionSPDservicioPublicoValorFacturadoProductoCargo> lcargofac = new List<extensionSPDservicioPublicoValorFacturadoProductoCargo>();
-                                                extensionSPDservicioPublicoValorFacturadoProductoDescuento dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
-                                                extensionSPDservicioPublicoValorFacturadoProductoCargo carfact = new extensionSPDservicioPublicoValorFacturadoProductoCargo();
-                                                if (subsidioFSSRI < 0)
-                                                {
-                                                    dctos.razonDescuento = "Subsidio FSSRI";
-                                                    dctos.valorDto = subsidioFSSRI * -1;
-                                                    ldctos.Add(dctos);
-                                                }
-                                                else
-                                                {
-                                                    if (subsidioFSSRI > 0)
-                                                    {
-                                                        carfact.razonCargo = "Subsidio FSSRI";
-                                                        carfact.valorCargo = subsidioFSSRI;
-                                                        lcargofac.Add(carfact);
-                                                    }
-                                                }
-                                                //dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
-                                                //dctos.razonDescuento = "Subsidio FECF";
-                                                //dctos.valorDto = subsidioFECF;
-                                                //ldctos.Add(dctos);
-                                                if (ajuste < 0)
-                                                {
-                                                    dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
-                                                    dctos.razonDescuento = "Ajuste";
-                                                    dctos.valorDto = ajuste * -1;
-                                                    ldctos.Add(dctos);
-                                                }
-                                                else
-                                                {
-                                                    if (ajuste > 0)
-                                                    {
-                                                        carfact = new extensionSPDservicioPublicoValorFacturadoProductoCargo();
-                                                        carfact.razonCargo = "Ajuste";
-                                                        carfact.valorCargo = ajuste;
-                                                        lcargofac.Add(carfact);
-                                                    }
-                                                }
-                                                producto.cargos = lcargofac.ToArray();
-                                                producto.descuentos = ldctos.ToArray();
-                                            }
-                                            else
-                                            {
-                                                linea.unidadMedida = "94";
-                                                linea.unidadesLinea = 1;
-                                                linea.precioUnidad = ((det.valor > 0) ? det.valor : det.valor * -1);
-                                                linea.subtotalLinea = ((det.valor > 0) ? det.valor : det.valor * -1);
-
-                                                // se cargan los demás conceptos diferentes a consumos
-                                                producto.totalUnidades = 1;
-                                                producto.unidadMedidaTotal = "94";
-                                                producto.consumoTotal = 1;
-                                                producto.unidadesConsumidas = 1;
-                                                producto.unidadMedidaConsumida = "94";
-                                                producto.valorConsumoParcial = ((det.valor > 0) ? det.valor : det.valor * -1);
-                                                producto.valorUnitario = ((det.valor > 0) ? det.valor : det.valor * -1);
-
-                                                if (det.codigo_c == "01")
-                                                {
-                                                    if (resConsumo == null)
-                                                    {
-                                                        if (ajuste < 0)
+                                                        if (subsidioFSSRI > 0)
                                                         {
-                                                            descuento = new documentoLineaDescuento();
-                                                            descuento.@base = ((det.valor > 0) ? det.valor : det.valor * -1);
-                                                            descuento.valor = ajuste * -1;
-                                                            descuento.porcentaje = Math.Round(((ajuste * -1) / ((det.valor > 0) ? det.valor : det.valor * -1)) * 100, 6);
-                                                            descuento.motivo = "Ajuste";
-                                                            ldescuentos.Add(descuento);
+                                                            cargo = new documentoLineaCargo();
+                                                            cargo.@base = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
+                                                            cargo.valor = subsidioFSSRI;
+                                                            cargo.porcentaje = Math.Round((subsidioFSSRI / (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF)) * 100, 6);
+                                                            cargo.motivo = "Subsidio FSSRI";
+                                                            lcargos.Add(cargo);
                                                         }
-                                                        else
+                                                    }
+                                                    //se retira el subsidio como descuento porque se está neteando en el consumo.
+                                                    //descuento = new documentoLineaDescuento();
+                                                    //descuento.@base = det.valor;
+                                                    //descuento.valor = subsidioFECF;
+                                                    //descuento.porcentaje = Math.Round((subsidioFECF / det.valor) * 100, 2);
+                                                    //descuento.motivo = "Subsidio FECF";
+                                                    //ldescuentos.Add(descuento);
+                                                    linea.unidadMedida = "MTQ";
+                                                    decimal porcentaje = 0;
+                                                    if (det.valor - subsidioFECF == 0)
+                                                        ajuste = 0;
+                                                    if (ajuste < 0)
+                                                    {
+                                                        porcentaje = Math.Round(((ajuste * -1) / (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF)) * 100, 6);
+                                                        descuento = new documentoLineaDescuento();
+                                                        descuento.@base = (porcentaje == 0) ? ajuste * -1 : (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
+                                                        descuento.valor = ajuste * -1;
+                                                        descuento.porcentaje = (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
+                                                        descuento.motivo = "Ajuste";
+                                                        ldescuentos.Add(descuento);
+                                                    }
+                                                    else
+                                                    {
+                                                        if (ajuste > 0)
                                                         {
-                                                            if (ajuste > 0)
+                                                            porcentaje = Math.Round((ajuste / (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF)) * 100, 6);
+                                                            cargo = new documentoLineaCargo();
+                                                            cargo.@base = (porcentaje == 0) ? ajuste : (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
+                                                            cargo.valor = ajuste;
+                                                            cargo.porcentaje = (porcentaje == 0) ? Convert.ToDecimal(100) : porcentaje;
+                                                            cargo.motivo = "Ajuste";
+                                                            lcargos.Add(cargo);
+                                                        }
+
+                                                    }
+                                                    cargos.cargo = lcargos.ToArray();
+                                                    linea.cargos = cargos;
+                                                    linea.cargoLinea = lcargos.Sum(x => x.valor);
+                                                    descuentos.descuento = ldescuentos.ToArray();
+                                                    linea.descuentoLinea = ldescuentos.Sum(x => x.valor);
+                                                    linea.descuentos = descuentos;
+                                                    linea.unidadesLinea = (det.cantidad>0)?det.cantidad:1;
+                                                    linea.precioUnidad = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF) / ((det.cantidad > 0) ? det.cantidad : 1);
+                                                    linea.subtotalLinea = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF);
+                                                    //llenar la información que se registra en la sección de SPD
+                                                    producto.totalUnidades = (det.cantidad > 0) ? det.cantidad : 1;
+                                                    producto.unidadMedidaTotal = "MTQ";
+                                                    producto.consumoTotal = ((det.valor > 0) ? det.valor : det.valor * -1) + linea.cargoLinea - linea.descuentoLinea - subsidioFECF;
+                                                    producto.unidadesConsumidas = (det.cantidad > 0) ? det.cantidad : 1;
+                                                    producto.unidadMedidaConsumida = "MTQ";
+                                                    producto.valorConsumoParcial = ((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF;
+                                                    producto.valorUnitario = (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF) / ((det.cantidad > 0) ? det.cantidad : 1);
+                                                    List<extensionSPDservicioPublicoValorFacturadoProductoDescuento> ldctos = new List<extensionSPDservicioPublicoValorFacturadoProductoDescuento>();
+                                                    List<extensionSPDservicioPublicoValorFacturadoProductoCargo> lcargofac = new List<extensionSPDservicioPublicoValorFacturadoProductoCargo>();
+                                                    extensionSPDservicioPublicoValorFacturadoProductoDescuento dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
+                                                    extensionSPDservicioPublicoValorFacturadoProductoCargo carfact = new extensionSPDservicioPublicoValorFacturadoProductoCargo();
+                                                    if (subsidioFSSRI < 0)
+                                                    {
+                                                        dctos.razonDescuento = "Subsidio FSSRI";
+                                                        dctos.valorDto = subsidioFSSRI * -1;
+                                                        ldctos.Add(dctos);
+                                                    }
+                                                    else
+                                                    {
+                                                        if (subsidioFSSRI > 0)
+                                                        {
+                                                            carfact.razonCargo = "Subsidio FSSRI";
+                                                            carfact.valorCargo = subsidioFSSRI;
+                                                            lcargofac.Add(carfact);
+                                                        }
+                                                    }
+                                                    //dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
+                                                    //dctos.razonDescuento = "Subsidio FECF";
+                                                    //dctos.valorDto = subsidioFECF;
+                                                    //ldctos.Add(dctos);
+                                                    if (ajuste < 0)
+                                                    {
+                                                        dctos = new extensionSPDservicioPublicoValorFacturadoProductoDescuento();
+                                                        dctos.razonDescuento = "Ajuste";
+                                                        dctos.valorDto = ajuste * -1;
+                                                        ldctos.Add(dctos);
+                                                    }
+                                                    else
+                                                    {
+                                                        if (ajuste > 0)
+                                                        {
+                                                            carfact = new extensionSPDservicioPublicoValorFacturadoProductoCargo();
+                                                            carfact.razonCargo = "Ajuste";
+                                                            carfact.valorCargo = ajuste;
+                                                            lcargofac.Add(carfact);
+                                                        }
+                                                    }
+                                                    producto.cargos = lcargofac.ToArray();
+                                                    producto.descuentos = ldctos.ToArray();
+                                                }
+                                                else
+                                                {
+                                                    linea.unidadMedida = "94";
+                                                    linea.unidadesLinea = 1;
+                                                    linea.precioUnidad = ((det.valor > 0) ? det.valor : det.valor * -1);
+                                                    linea.subtotalLinea = ((det.valor > 0) ? det.valor : det.valor * -1);
+
+                                                    // se cargan los demás conceptos diferentes a consumos
+                                                    producto.totalUnidades = 1;
+                                                    producto.unidadMedidaTotal = "94";
+                                                    producto.consumoTotal = 1;
+                                                    producto.unidadesConsumidas = 1;
+                                                    producto.unidadMedidaConsumida = "94";
+                                                    producto.valorConsumoParcial = ((det.valor > 0) ? det.valor : det.valor * -1);
+                                                    producto.valorUnitario = ((det.valor > 0) ? det.valor : det.valor * -1);
+
+                                                    if (det.codigo_c == "01")
+                                                    {
+                                                        if (resConsumo == null)
+                                                        {
+                                                            if (ajuste < 0)
                                                             {
-                                                                cargo = new documentoLineaCargo();
-                                                                cargo.@base = (det.valor > 0) ? det.valor : det.valor * -1;
-                                                                cargo.valor = ajuste;
-                                                                cargo.porcentaje = Math.Round((ajuste / ((det.valor > 0) ? det.valor : det.valor * -1)) * 100, 6);
-                                                                cargo.motivo = "Ajuste";
-                                                                lcargos.Add(cargo);
+                                                                descuento = new documentoLineaDescuento();
+                                                                descuento.@base = ((det.valor > 0) ? det.valor : det.valor * -1);
+                                                                descuento.valor = ajuste * -1;
+                                                                descuento.porcentaje = Math.Round(((ajuste * -1) / ((det.valor > 0) ? det.valor : det.valor * -1)) * 100, 6);
+                                                                descuento.motivo = "Ajuste";
+                                                                ldescuentos.Add(descuento);
                                                             }
+                                                            else
+                                                            {
+                                                                if (ajuste > 0)
+                                                                {
+                                                                    cargo = new documentoLineaCargo();
+                                                                    cargo.@base = (det.valor > 0) ? det.valor : det.valor * -1;
+                                                                    cargo.valor = ajuste;
+                                                                    cargo.porcentaje = Math.Round((ajuste / ((det.valor > 0) ? det.valor : det.valor * -1)) * 100, 6);
+                                                                    cargo.motivo = "Ajuste";
+                                                                    lcargos.Add(cargo);
+                                                                }
+                                                            }
+                                                            cargos.cargo = lcargos.ToArray();
+                                                            linea.cargos = cargos;
+                                                            linea.cargoLinea = lcargos.Sum(x => x.valor);
+                                                            descuentos.descuento = ldescuentos.ToArray();
+                                                            linea.descuentoLinea = ldescuentos.Sum(x => x.valor);
+                                                            linea.descuentos = descuentos;
                                                         }
-                                                        cargos.cargo = lcargos.ToArray();
-                                                        linea.cargos = cargos;
-                                                        linea.cargoLinea = lcargos.Sum(x => x.valor);
-                                                        descuentos.descuento = ldescuentos.ToArray();
-                                                        linea.descuentoLinea = ldescuentos.Sum(x => x.valor);
-                                                        linea.descuentos = descuentos;
                                                     }
                                                 }
+                                                List<extensionSPDservicioPublicoValorFacturadoProductoLecturaContador> llecturas = new List<extensionSPDservicioPublicoValorFacturadoProductoLecturaContador>();
+                                                extensionSPDservicioPublicoValorFacturadoProductoLecturaContador lectura = new extensionSPDservicioPublicoValorFacturadoProductoLecturaContador();
+                                                lectura.datosMedidor = nota.Nmedidor;
+                                                lectura.unidadesLecturaAnterior = lectura1.lect_anterior;
+                                                lectura.unidadMedidaAnterior = "MTQ";
+                                                lectura.fechaLecturaActual = ConvertirFecha(lectura1.fecha_lectura.ToString(), "");
+                                                lectura.unidadesLecturaActual = lectura1.lect_actual;
+                                                lectura.unidadMedidaActual = "MTQ";
+                                                llecturas.Add(lectura);
+                                                producto.lecturaContador = llecturas.ToArray();
+                                                lproductos.Add(producto);
+                                                subtotal += (det.codigo_c == "02") ? (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF) : ((det.valor > 0) ? det.valor : det.valor * -1);
+                                                linea.totalLinea = linea.subtotalLinea + linea.cargoLinea - linea.descuentoLinea;
+                                                totaldoc += linea.totalLinea;
+                                                lLineas.Add(linea);
+                                                lineas.linea = lLineas.ToArray();
+                                                factura.lineas = lineas;
                                             }
-                                            List<extensionSPDservicioPublicoValorFacturadoProductoLecturaContador> llecturas = new List<extensionSPDservicioPublicoValorFacturadoProductoLecturaContador>();
-                                            extensionSPDservicioPublicoValorFacturadoProductoLecturaContador lectura = new extensionSPDservicioPublicoValorFacturadoProductoLecturaContador();
-                                            lectura.datosMedidor = nota.Nmedidor;
-                                            lectura.unidadesLecturaAnterior = lectura1.lect_anterior;
-                                            lectura.unidadMedidaAnterior = "MTQ";
-                                            lectura.fechaLecturaActual = ConvertirFecha(lectura1.fecha_lectura.ToString(), "");
-                                            lectura.unidadesLecturaActual = lectura1.lect_actual;
-                                            lectura.unidadMedidaActual = "MTQ";
-                                            llecturas.Add(lectura);
-                                            producto.lecturaContador = llecturas.ToArray();
-                                            lproductos.Add(producto);
-                                            subtotal += (det.codigo_c == "02") ? (((det.valor > 0) ? det.valor : det.valor * -1) - subsidioFECF) : ((det.valor > 0) ? det.valor : det.valor * -1);
-                                            linea.totalLinea = linea.subtotalLinea + linea.cargoLinea - linea.descuentoLinea;
-                                            totaldoc += linea.totalLinea;
+                                            if (ConceptosDeuda.Contains(det.codigo_c))
+                                            {
+                                                if (det.valor > 0)
+                                                {
+                                                    cargosf = new documentoLineaCargo();
+                                                    cargosf.@base = (det.valor > tbase) ? det.valor : tbase;
+                                                    cargosf.porcentaje = (det.valor > tbase) ? Convert.ToDecimal(100) : Math.Round((det.valor / tbase) * 100, 6);
+                                                    cargosf.valor = det.valor;
+                                                    cargosf.motivo = det.nombre_c;
+                                                    lcargosfact.Add(cargosf);
+                                                }
+                                                else
+                                                {
+                                                    descuentof = new documentoLineaDescuento();
+                                                    descuentof.@base = ((det.valor * -1) > tbase) ? (det.valor * -1) : tbase;
+                                                    descuentof.porcentaje = ((det.valor * -1) > tbase) ? Convert.ToDecimal(100) : Math.Round(((det.valor * -1) / tbase) * 100, 6);
+                                                    descuentof.valor = det.valor * -1;
+                                                    descuentof.motivo = det.nombre_c;
+                                                    ldescuentosfact.Add(descuentof);
+                                                }
+
+                                            }
+                                        }
+                                        if (deuda > 0)
+                                        {
+                                            cargosf = new documentoLineaCargo();
+                                            cargosf.@base = tbase;
+                                            cargosf.porcentaje = Math.Round((deuda / tbase) * 100, 6);
+                                            cargosf.valor = deuda;
+                                            cargosf.motivo = "Deuda Anterior";
+                                            lcargosfact.Add(cargosf);
+                                        }
+                                        if (deuda < 0)
+                                        {
+                                            descuentof = new documentoLineaDescuento();
+                                            descuentof.@base = ((deuda * -1) > tbase) ? (deuda * -1) : tbase;
+                                            descuentof.porcentaje = Math.Round(((deuda * -1) / tbase) * 100, 6);
+                                            descuentof.valor = deuda * -1;
+                                            descuentof.motivo = "Deuda Anterior";
+                                            ldescuentosfact.Add(descuentof);
+                                        }
+                                        if (factura.lineas == null)
+                                        {
+                                            linea = new documentoLinea();
+                                            linea.numLinea = 1;
+                                            linea.idEstandarReferencia = "999";
+                                            linea.referenciaItem = "02";
+                                            linea.descripcionItem = "CONSUMO";
+                                            linea.unidadMedida = "MTQ";
+                                            linea.unidadesLinea = 0;
+                                            linea.precioUnidad = 0;
+                                            linea.subtotalLinea = 0;
+                                            linea.totalLinea = 0;
                                             lLineas.Add(linea);
                                             lineas.linea = lLineas.ToArray();
                                             factura.lineas = lineas;
+                                            totaldoc = Convert.ToDecimal(0.00);
                                         }
-                                        if (ConceptosDeuda.Contains(det.codigo_c))
+
+                                        documentolineaCargos cargosfact = new documentolineaCargos();
+                                        cargosfact.cargo = lcargosfact.ToArray();
+                                        factura.cargos = cargosfact;
+                                        documentolineaDescuentos descuentosfact = new documentolineaDescuentos();
+                                        descuentosfact.descuento = ldescuentosfact.ToArray();
+                                        factura.descuentos = descuentosfact;
+                                        decimal totalcargos = 0;
+                                        decimal totaldescts = 0;
+                                        totalcargos = lcargosfact.Sum(x => x.valor);
+                                        totaldescts = ldescuentosfact.Sum(x => x.valor);
+                                        documentodatosTotales totales = new documentodatosTotales();
+                                        totales.subtotal = subtotal;
+                                        totales.porcDescuentoFinal = (totaldescts > 0) ? Math.Round(totaldescts / ((totaldoc + totalcargos > 0) ? (totaldoc + totalcargos) : totaldescts) * 100, 6) : 0;
+                                        totales.descuentoFinal = totaldescts;// (ajuste < 0) ? subsidioFECF + subsidioFSSRI + (ajuste*-1) : subsidioFECF + subsidioFSSRI;
+                                        totales.totalCargos = totalcargos;   // (deuda > 0) ? deuda : 0;// (ajuste > 0) ? ajuste : 0;
+                                        totales.totalBase = subtotal;
+                                        totales.totalImpuestos = 0;
+                                        totales.totalGastos = 0;
+                                        totales.totalDocumento = totaldoc;
+                                        totales.totalRetenciones = 0;
+                                        totales.totalAnticipos = 0;
+                                        totales.aPagar = totaldoc + totalcargos - totaldescts;
+                                        factura.datosTotales = totales;
+                                        documentocondicionesPago condicionesPago = new documentocondicionesPago();
+                                        documentocondicionPago condicionPago = new documentocondicionPago();
+                                        condicionPago.formaPago = "1";
+                                        condicionPago.medioPago = "10";
+                                        condicionesPago.condicionPago = condicionPago;
+                                        factura.condicionesPago = condicionesPago;
+                                        documentoExtensionSPD extSPD = new documentoExtensionSPD();
+                                        extSPD.referenciaPago = nota.numfact;
+                                        extSPD.estratoPredio = Convert.ToInt16(nota.estrato).ToString();
+                                        extSPD.tipoUsoPredio = nota.uso;
+                                        extensionSPDservicioPublico servicio = new extensionSPDservicioPublico();
+                                        servicio.numLinea = "1";
+                                        servicio.indTercero = "N";
+                                        servicio.servicioFacturado = "GAS";
+                                        servicio.empresa = "ENERCER";
+                                        servicio.motivo = "Facturación Servicio Público";
+                                        servicio.numeroContrato = nota.matricula.ToString();
+                                        List<extensionSPDservicioPublicosuscriptor> lsuscriptor = new List<extensionSPDservicioPublicosuscriptor>();
+                                        extensionSPDservicioPublicosuscriptor suscriptor = new extensionSPDservicioPublicosuscriptor();
+                                        suscriptor.nombre = nota.Nombre_cliente + ' ' + nota.Apellido1_cliente + ' ' + nota.Apellido2_Cliente + ' ' + nota.Razon_social;
+                                        suscriptor.direccionPostal = nota.Direccion_cliente;
+                                        suscriptor.direccionEntrega = nota.Direccion_cliente;
+                                        suscriptor.ciudad = nota.ciudad_cliente;
+                                        suscriptor.departamento = nota.departamento_cliente;
+                                        suscriptor.pais = "CO";
+                                        suscriptor.tipoEstrato = Convert.ToInt16(nota.estrato).ToString();
+                                        suscriptor.email = nota.email_cliente;
+                                        lsuscriptor.Add(suscriptor);
+                                        servicio.subscriptor = lsuscriptor.ToArray();
+                                        List<extensionSPDservicioPublicovalorFacturado> lvalfactura = new List<extensionSPDservicioPublicovalorFacturado>();
+                                        extensionSPDservicioPublicovalorFacturado valfactura = new extensionSPDservicioPublicovalorFacturado();
+                                        valfactura.ciclo = "1";
+                                        valfactura.tipoPeriodicidad = "1";
+                                        valfactura.producto = lproductos.ToArray();
+                                        lvalfactura.Add(valfactura);
+                                        servicio.valorFacturado = lvalfactura.ToArray();
+                                        List<extensionSPDservicioPublico> lservicios = new List<extensionSPDservicioPublico>();
+                                        lservicios.Add(servicio);
+                                        extSPD.servicioPublico = lservicios.ToArray();
+                                        factura.extensionSPD = extSPD;
+                                        try
                                         {
-                                            if (det.valor > 0)
-                                            {
-                                                cargosf = new documentoLineaCargo();
-                                                cargosf.@base = (det.valor > tbase) ? det.valor : tbase;
-                                                cargosf.porcentaje = (det.valor > tbase) ? Convert.ToDecimal(100) : Math.Round((det.valor / tbase) * 100, 6);
-                                                cargosf.valor = det.valor;
-                                                cargosf.motivo = det.nombre_c;
-                                                lcargosfact.Add(cargosf);
-                                            }
-                                            else
-                                            {
-                                                descuentof = new documentoLineaDescuento();
-                                                descuentof.@base = ((det.valor * -1) > tbase) ? (det.valor * -1) : tbase;
-                                                descuentof.porcentaje = ((det.valor * -1) > tbase) ? Convert.ToDecimal(100) : Math.Round(((det.valor * -1) / tbase) * 100, 6);
-                                                descuentof.valor = det.valor * -1;
-                                                descuentof.motivo = det.nombre_c;
-                                                ldescuentosfact.Add(descuentof);
-                                            }
-
+                                            var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
+                                            result = GuardarResponseNota(resultado, factura);
+                                            //System.IO.File.Delete(ruta);
+                                            success = true;
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            result = ex.Message;
+                                            success = false;
                                         }
                                     }
-                                    if (deuda > 0)
+                                    else
                                     {
-                                        cargosf = new documentoLineaCargo();
-                                        cargosf.@base = tbase;
-                                        cargosf.porcentaje = Math.Round((deuda / tbase) * 100, 6);
-                                        cargosf.valor = deuda;
-                                        cargosf.motivo = "Deuda Anterior";
-                                        lcargosfact.Add(cargosf);
-                                    }
-                                    if (deuda < 0)
-                                    {
-                                        descuentof = new documentoLineaDescuento();
-                                        descuentof.@base = ((deuda * -1) > tbase) ? (deuda * -1) : tbase;
-                                        descuentof.porcentaje = Math.Round(((deuda * -1) / tbase) * 100, 6);
-                                        descuentof.valor = deuda * -1;
-                                        descuentof.motivo = "Deuda Anterior";
-                                        ldescuentosfact.Add(descuentof);
-                                    }
-                                    if (factura.lineas == null)
-                                    {
-                                        linea = new documentoLinea();
-                                        linea.numLinea = 1;
-                                        linea.idEstandarReferencia = "999";
-                                        linea.referenciaItem = "02";
-                                        linea.descripcionItem = "CONSUMO";
-                                        linea.unidadMedida = "MTQ";
-                                        linea.unidadesLinea = 0;
-                                        linea.precioUnidad = 0;
-                                        linea.subtotalLinea = 0;
-                                        linea.totalLinea = 0;
-                                        lLineas.Add(linea);
-                                        lineas.linea = lLineas.ToArray();
-                                        factura.lineas = lineas;
-                                        totaldoc = Convert.ToDecimal(0.00);
-                                    }
-
-                                    documentolineaCargos cargosfact = new documentolineaCargos();
-                                    cargosfact.cargo = lcargosfact.ToArray();
-                                    factura.cargos = cargosfact;
-                                    documentolineaDescuentos descuentosfact = new documentolineaDescuentos();
-                                    descuentosfact.descuento = ldescuentosfact.ToArray();
-                                    factura.descuentos = descuentosfact;
-                                    decimal totalcargos = 0;
-                                    decimal totaldescts = 0;
-                                    totalcargos = lcargosfact.Sum(x => x.valor);
-                                    totaldescts = ldescuentosfact.Sum(x => x.valor);
-                                    documentodatosTotales totales = new documentodatosTotales();
-                                    totales.subtotal = subtotal;
-                                    totales.porcDescuentoFinal = (totaldescts > 0) ? Math.Round(totaldescts / ((totaldoc + totalcargos>0)?(totaldoc + totalcargos):totaldescts) * 100, 6) : 0;
-                                    totales.descuentoFinal = totaldescts;// (ajuste < 0) ? subsidioFECF + subsidioFSSRI + (ajuste*-1) : subsidioFECF + subsidioFSSRI;
-                                    totales.totalCargos = totalcargos;   // (deuda > 0) ? deuda : 0;// (ajuste > 0) ? ajuste : 0;
-                                    totales.totalBase = subtotal;
-                                    totales.totalImpuestos = 0;
-                                    totales.totalGastos = 0;
-                                    totales.totalDocumento = totaldoc;
-                                    totales.totalRetenciones = 0;
-                                    totales.totalAnticipos = 0;
-                                    totales.aPagar = totaldoc + totalcargos - totaldescts;
-                                    factura.datosTotales = totales;
-                                    documentocondicionesPago condicionesPago = new documentocondicionesPago();
-                                    documentocondicionPago condicionPago = new documentocondicionPago();
-                                    condicionPago.formaPago = "1";
-                                    condicionPago.medioPago = "10";
-                                    condicionesPago.condicionPago = condicionPago;
-                                    factura.condicionesPago = condicionesPago;
-                                    documentoExtensionSPD extSPD = new documentoExtensionSPD();
-                                    extSPD.referenciaPago = nota.numfact;
-                                    extSPD.estratoPredio = Convert.ToInt16(nota.estrato).ToString();
-                                    extSPD.tipoUsoPredio = nota.uso;
-                                    extensionSPDservicioPublico servicio = new extensionSPDservicioPublico();
-                                    servicio.numLinea = "1";
-                                    servicio.indTercero = "N";
-                                    servicio.servicioFacturado = "GAS";
-                                    servicio.empresa = "ENERCER";
-                                    servicio.motivo = "Facturación Servicio Público";
-                                    servicio.numeroContrato = nota.matricula.ToString();
-                                    List<extensionSPDservicioPublicosuscriptor> lsuscriptor = new List<extensionSPDservicioPublicosuscriptor>();
-                                    extensionSPDservicioPublicosuscriptor suscriptor = new extensionSPDservicioPublicosuscriptor();
-                                    suscriptor.nombre = nota.Nombre_cliente + ' ' + nota.Apellido1_cliente + ' ' + nota.Apellido2_Cliente + ' ' + nota.Razon_social;
-                                    suscriptor.direccionPostal = nota.Direccion_cliente;
-                                    suscriptor.direccionEntrega = nota.Direccion_cliente;
-                                    suscriptor.ciudad = nota.ciudad_cliente;
-                                    suscriptor.departamento = nota.departamento_cliente;
-                                    suscriptor.pais = "CO";
-                                    suscriptor.tipoEstrato = Convert.ToInt16(nota.estrato).ToString();
-                                    suscriptor.email = nota.email_cliente;
-                                    lsuscriptor.Add(suscriptor);
-                                    servicio.subscriptor = lsuscriptor.ToArray();
-                                    List<extensionSPDservicioPublicovalorFacturado> lvalfactura = new List<extensionSPDservicioPublicovalorFacturado>();
-                                    extensionSPDservicioPublicovalorFacturado valfactura = new extensionSPDservicioPublicovalorFacturado();
-                                    valfactura.ciclo = "1";
-                                    valfactura.tipoPeriodicidad = "1";
-                                    valfactura.producto = lproductos.ToArray();
-                                    lvalfactura.Add(valfactura);
-                                    servicio.valorFacturado = lvalfactura.ToArray();
-                                    List<extensionSPDservicioPublico> lservicios = new List<extensionSPDservicioPublico>();
-                                    lservicios.Add(servicio);
-                                    extSPD.servicioPublico = lservicios.ToArray();
-                                    factura.extensionSPD = extSPD;
-                                    try
-                                    {
-                                        var resultado = await EnviarSolicitudSOAPAsync(url, usuario, contraseña, factura);
-                                        result = GuardarResponseNota(resultado, factura);
-                                        //System.IO.File.Delete(ruta);
-                                        success = true;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        result = ex.Message;
-                                        success = false;
+                                        Envio_Notas envio = new Envio_Notas();
+                                        envio.Tiponota = (nota.valor_mod > 0) ? "NDE" : "NCE";
+                                        envio.Numnota = (nota.valor_mod > 0) ? "D" : "C" + nota.prefijo + nota.numfact; //nota.prefijoNota.Trim() + nota.NumeroNota.ToString().Trim();
+                                        envio.Codpredio = codsus;
+                                        envio.mensaje_respuesta = "El documento no tiene conceptos o tienen valor 0";
+                                        envio.codigo_respuesta = "INT";
+                                        envio.xml_enviado = "";
+                                        try
+                                        {
+                                            new ADEnvio_notas().Insertar_Envio(envio);
+                                            result = "Documento Enviado";
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            result = ex.Message;
+                                        }
                                     }
                                 }
                                 else
                                 {
                                     Envio_Notas envio = new Envio_Notas();
                                     envio.Tiponota = (nota.valor_mod > 0) ? "NDE" : "NCE";
-                                    envio.Numnota =(nota.valor_mod>0)?"D":"C"+nota.prefijo + nota.numfact; //nota.prefijoNota.Trim() + nota.NumeroNota.ToString().Trim();
+                                    envio.Numnota = (nota.valor_mod > 0) ? "D" : "C" + nota.prefijo + nota.numfact;// nota.prefijoNota.Trim() + nota.NumeroNota.ToString().Trim();
                                     envio.Codpredio = codsus;
-                                    envio.mensaje_respuesta = "El documento no tiene conceptos o tienen valor 0";
+                                    envio.mensaje_respuesta = "No existe el suscriptor o no tiene la información completa";
                                     envio.codigo_respuesta = "INT";
                                     envio.xml_enviado = "";
                                     try
@@ -2276,9 +2320,9 @@ namespace WebAppElectronicInvoice.Controllers
                             {
                                 Envio_Notas envio = new Envio_Notas();
                                 envio.Tiponota = (nota.valor_mod > 0) ? "NDE" : "NCE";
-                                envio.Numnota = (nota.valor_mod > 0) ? "D" : "C" + nota.prefijo + nota.numfact;// nota.prefijoNota.Trim() + nota.NumeroNota.ToString().Trim();
+                                envio.Numnota = (nota.valor_mod > 0) ? "D" : "C" + nota.prefijo + nota.numfact;//    nota.prefijoNota.Trim() + nota.NumeroNota.ToString().Trim();
                                 envio.Codpredio = codsus;
-                                envio.mensaje_respuesta = "No existe el suscriptor o no tiene la información completa";
+                                envio.mensaje_respuesta = "La factura No. " + nota.prefijo.Trim() + nota.numfact.Trim() + " no ha sido enviada a invoway.";
                                 envio.codigo_respuesta = "INT";
                                 envio.xml_enviado = "";
                                 try
@@ -2290,25 +2334,6 @@ namespace WebAppElectronicInvoice.Controllers
                                 {
                                     result = ex.Message;
                                 }
-                            }
-                        }
-                        else
-                        {
-                            Envio_Notas envio = new Envio_Notas();
-                            envio.Tiponota = (nota.valor_mod > 0) ? "NDE" : "NCE";
-                            envio.Numnota = (nota.valor_mod > 0) ? "D" : "C" + nota.prefijo + nota.numfact;//    nota.prefijoNota.Trim() + nota.NumeroNota.ToString().Trim();
-                            envio.Codpredio = codsus;
-                            envio.mensaje_respuesta = "La factura No. " + nota.prefijo.Trim() + nota.numfact.Trim() + " no ha sido enviada a invoway.";
-                            envio.codigo_respuesta = "INT";
-                            envio.xml_enviado = "";
-                            try
-                            {
-                                new ADEnvio_notas().Insertar_Envio(envio);
-                                result = "Documento Enviado";
-                            }
-                            catch (Exception ex)
-                            {
-                                result = ex.Message;
                             }
                         }
                     }
@@ -2342,7 +2367,20 @@ namespace WebAppElectronicInvoice.Controllers
             return Json(new { success = success, message = result }, JsonRequestBehavior.AllowGet);
         }
         #endregion
-
+        [HttpPost]
+        public ActionResult Eliminar(int id)
+        {
+            try
+            {
+                new ADFacturasT().Eliminar_Factura(id);
+                //lfacturas = new ADFacturasT().Consultar_Facturas();
+            }
+            catch (Exception ex)
+            {
+                ViewBag.mensaje=ex.Message;
+            }
+            return RedirectToAction("FacturasPendientes");
+        }
         
     }
 }

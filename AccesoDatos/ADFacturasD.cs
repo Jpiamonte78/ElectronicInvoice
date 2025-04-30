@@ -64,6 +64,7 @@ namespace AccesoDatos
                 using (SqlCommand cmd = new SqlCommand("SpFacturasD", sqlconn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandTimeout = 1200;
                     cmd.Parameters.AddWithValue("accion", "insertar");
                     cmd.Parameters.AddWithValue("id_facturaD", DBNull.Value);
                     cmd.Parameters.AddWithValue("ciclo", fact.ciclo);

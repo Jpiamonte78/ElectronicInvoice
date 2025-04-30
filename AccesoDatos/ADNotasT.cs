@@ -91,7 +91,7 @@ namespace AccesoDatos
                     }
                     catch (Exception ex)
                     {
-                        throw new ApplicationException("Consultar_Notas: " + ex.Message, ex);
+                         throw new ApplicationException("Consultar_Notas: " + ex.Message, ex);
                     }
                 }
             }

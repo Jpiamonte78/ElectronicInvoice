@@ -115,7 +115,7 @@ namespace AccesoDatos
                     cmd.CommandText = "SpFacturasT";
                     cmd.CommandTimeout = 3600;
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("accion", "Consultar");
+                    cmd.Parameters.AddWithValue("accion", "consulta_basica");
                     cmd.Parameters.AddWithValue("id_factura", DBNull.Value);
                     cmd.Parameters.AddWithValue("ciclo", DBNull.Value);
                     cmd.Parameters.AddWithValue("anio", DBNull.Value);
@@ -131,6 +131,58 @@ namespace AccesoDatos
                         FacturasT fact = new FacturasT();
                         var dr = cmd.ExecuteReader();
                         while(dr.Read())
+                        {
+                            fact = new FacturasT();
+                            fact.id_factura = Convert.ToInt32(dr["id_factura"]);
+                            fact.ciclo = dr["ciclo"].ToString();
+                            fact.fecha = Convert.ToDateTime(dr["fecha"]);
+                            fact.Prefijo = dr["Prefijo"].ToString();
+                            fact.anio = Convert.ToInt32(dr["anio"]);
+                            fact.periodo = dr["periodo"].ToString();
+                            fact.numfact = dr["numfact"].ToString();
+                            fact.codpredio = dr["codpredio"].ToString();
+                            fact.valor_total = Convert.ToDecimal(dr["valor_total"]);
+                            fact.codigo_respuesta = dr["codigo_respuesta"].ToString();
+                            fact.mensaje = dr["mensaje"].ToString();
+                            fact.id_Envio_Factura = Convert.ToInt32(dr["id_Envio_Factura"]);
+                            lfacturas.Add(fact);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new ApplicationException("Consultar_Facturas: "+ex.Message,ex);
+                    }
+                }
+            }
+            return lfacturas;
+        }
+
+        public FacturasT Consultar_Una_Factura(int idfactura)
+        {
+            FacturasT fact = new FacturasT();
+            using (SqlConnection conn = GetConnDB())
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SpFacturasT";
+                    cmd.CommandTimeout = 3600;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("accion", "consultar_factura");
+                    cmd.Parameters.AddWithValue("id_factura", idfactura);
+                    cmd.Parameters.AddWithValue("ciclo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("anio", DBNull.Value);
+                    cmd.Parameters.AddWithValue("periodo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("numfact", DBNull.Value);
+                    cmd.Parameters.AddWithValue("codpredio", DBNull.Value);
+                    cmd.Parameters.AddWithValue("valor_total", DBNull.Value);
+                    cmd.Parameters.AddWithValue("fecha", DBNull.Value);
+                    cmd.Parameters.AddWithValue("fecha_limite", DBNull.Value);
+                    cmd.Parameters.AddWithValue("atraso", DBNull.Value);
+                    try
+                    {
+                        
+                        var dr = cmd.ExecuteReader();
+                        while (dr.Read())
                         {
                             fact = new FacturasT();
                             fact.id_factura = Convert.ToInt32(dr["id_factura"]);
@@ -172,22 +224,49 @@ namespace AccesoDatos
                             fact.actualizado = Convert.ToBoolean(dr["actualizado"]);
                             fact.nomciudad = dr["nomciudad"].ToString();
                             fact.nomdepto = dr["nomdepto"].ToString();
-                            fact.mensaje = dr["mensaje"].ToString();
                             fact.UsoTarifa = dr["UsoTarifa"].ToString();
                             fact.EstratoTarifa = dr["EstratoTarifa"].ToString();
                             fact.atraso = Convert.ToInt16(dr["atraso"]);
-                            fact.codigo_respuesta = dr["codigo_respuesta"].ToString();
-                            fact.id_Envio_Factura = Convert.ToInt32(dr["id_Envio_Factura"]);
-                            lfacturas.Add(fact);
                         }
                     }
                     catch (Exception ex)
                     {
-                        throw new ApplicationException("Consultar_Facturas: "+ex.Message,ex);
+                        throw new ApplicationException("Consultar_Facturas: " + ex.Message, ex);
                     }
                 }
             }
-            return lfacturas;
+            return fact;
+        }
+
+        public void Eliminar_Factura(int idfactura)
+        {
+            using (SqlConnection conn = GetConnDB())
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SpFacturasT";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("accion", "Eliminar");
+                    cmd.Parameters.AddWithValue("id_factura", idfactura);
+                    cmd.Parameters.AddWithValue("ciclo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("anio", DBNull.Value);
+                    cmd.Parameters.AddWithValue("periodo", DBNull.Value);
+                    cmd.Parameters.AddWithValue("numfact", DBNull.Value);
+                    cmd.Parameters.AddWithValue("codpredio", DBNull.Value);
+                    cmd.Parameters.AddWithValue("valor_total", DBNull.Value);
+                    cmd.Parameters.AddWithValue("fecha", DBNull.Value);
+                    cmd.Parameters.AddWithValue("fecha_limite", DBNull.Value);
+                    cmd.Parameters.AddWithValue("atraso", DBNull.Value);
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new ApplicationException($"Eliminar_Factura: {ex.Message}",ex);
+                    }
+                }
+            }
         }
     }
 }

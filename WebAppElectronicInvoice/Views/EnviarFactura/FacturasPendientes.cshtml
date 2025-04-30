@@ -30,6 +30,7 @@
             <th>
                 @Html.DisplayNameFor(model => model.mensaje)
             </th>
+            <th></th>
         </tr>
 
         @foreach (var item in Model)
@@ -55,6 +56,11 @@
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.mensaje)
+                </td>
+                <td>
+                    <form method="post" action="/EnviarFactura/Eliminar/@item.id_factura">
+                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                    </form>
                 </td>
             </tr>
         }
@@ -95,6 +101,7 @@
                         $('#loading').hide();
                         $('#btnenviar').prop('disabled', false);
                         alert('Cargue exitoso: ' + response.message);
+                        location.reload();
                     }
                     else {
                         $('#loading').hide();
@@ -109,6 +116,15 @@
                     alert('Error en la solicitud');
                 }
             });
+
+            document.querySelectorAll('.btn-danger').forEach(button => {
+                button.addEventListener('click', function (event) {
+                    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) {
+                        event.preventDefault();
+                    }
+                });
+            });
+
         });
     </script>
 }
